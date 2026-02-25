@@ -11,6 +11,7 @@ ProbeAgent is an offensive security testing CLI for AI agents. Attack your AI ag
 - `src/probeagent/attacks/` - Attack modules (prompt injection, credential exfil, goal hijacking, tool misuse, data exfil)
 - `src/probeagent/utils/` - Config, env loading
 - `profiles/` - YAML attack profiles (quick, standard, thorough)
+- `tools/test_target.py` - Test target server (vulnerable + hardened Claude-backed agents)
 - `tests/` - pytest test suite (121 tests)
 
 ## Development Commands
@@ -18,6 +19,7 @@ ProbeAgent is an offensive security testing CLI for AI agents. Attack your AI ag
 - Tests: `.venv/bin/python -m pytest tests/ -v`
 - Lint: `.venv/bin/ruff check src/ tests/`
 - Format: `.venv/bin/ruff format src/ tests/`
+- Test target: `ANTHROPIC_API_KEY=sk-... python tools/test_target.py`
 - Note: After model changes, may need to recreate venv: `rm -rf .venv && uv venv --python 3.12 .venv && uv pip install -e ".[dev]"`
 
 ## Key Conventions

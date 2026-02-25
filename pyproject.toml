@@ -36,6 +36,11 @@ dev = [
     "ruff>=0.4",
     "respx>=0.21",
 ]
+test-target = [
+    "fastapi>=0.111",
+    "uvicorn>=0.30",
+    "anthropic>=0.34",
+]
 
 [project.scripts]
 probeagent = "probeagent.cli:app"

@@ -122,7 +122,7 @@ def attack(
     # Validate target
     target = target_cls(target_url, timeout=timeout)
     info = asyncio.run(_validate_target(target))
-    asyncio.run(target.close())
+
 
     if not info.reachable:
         console.print(f"\n[red]Target unreachable:[/red] {info.error}")
@@ -193,7 +193,7 @@ def validate(
         raise typer.Exit(1)
     target = target_cls(target_url, timeout=timeout)
     info = asyncio.run(_validate_target(target))
-    asyncio.run(target.close())
+
 
     if info.reachable:
         panel_text = (
@@ -222,4 +222,7 @@ def init() -> None:
 
 
 async def _validate_target(target: Target):
-    return await target.validate()
+    try:
+        return await target.validate()
+    finally:
+        await target.close()
