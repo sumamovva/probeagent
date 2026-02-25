@@ -1,0 +1,14 @@
+# ProbeAgent Standard Profile
+# Balanced scan — all attacks, multi-turn
+name: standard
+description: Balanced scan with all attacks and multi-turn probes
+
+max_turns: 3
+attacker_model: gpt-4
+
+attacks:
+  - prompt_injection
+  - credential_exfil
+  - goal_hijacking
+  - tool_misuse
+  - data_exfil

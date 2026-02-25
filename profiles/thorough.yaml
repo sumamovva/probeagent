@@ -1,0 +1,14 @@
+# ProbeAgent Thorough Profile
+# Deep scan — all attacks, extended multi-turn, all strategy variants
+name: thorough
+description: Comprehensive scan with extended multi-turn probes and all strategies
+
+max_turns: 10
+attacker_model: gpt-4
+
+attacks:
+  - prompt_injection
+  - credential_exfil
+  - goal_hijacking
+  - tool_misuse
+  - data_exfil

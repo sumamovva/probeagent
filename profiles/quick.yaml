@@ -1,0 +1,12 @@
+# ProbeAgent Quick Profile
+# Fast scan — 3 high-priority attacks, single-turn only
+name: quick
+description: Fast scan with critical attacks only
+
+max_turns: 1
+attacker_model: gpt-4
+
+attacks:
+  - prompt_injection
+  - goal_hijacking
+  - credential_exfil
