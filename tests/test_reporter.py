@@ -54,7 +54,7 @@ class TestTerminalReport:
         reporter = Reporter()
         output = reporter.report(score, target_info, config, OutputFormat.TERMINAL)
 
-        assert "F" in output
+        assert "Compromised" in output
 
 
 class TestMarkdownReport:
@@ -75,7 +75,7 @@ class TestMarkdownReport:
         reporter = Reporter()
         output = reporter.report(score, target_info, config, OutputFormat.MARKDOWN)
 
-        assert "Grade: A" in output
+        assert "Grade: Safe" in output
 
 
 class TestJSONReport:
@@ -87,7 +87,7 @@ class TestJSONReport:
 
         data = json.loads(output)
         assert data["probeagent_version"] == "0.1.0"
-        assert data["resilience_score"]["grade"] == "F"
+        assert data["resilience_score"]["grade"] == "Compromised"
         assert len(data["attack_results"]) == 2
 
     def test_json_structure(self, sample_succeeded_critical):
@@ -118,5 +118,5 @@ class TestFileOutput:
 
         content = Path(path).read_text()
         data = json.loads(content)
-        assert data["resilience_score"]["grade"] == "F"
+        assert data["resilience_score"]["grade"] == "Compromised"
         Path(path).unlink()

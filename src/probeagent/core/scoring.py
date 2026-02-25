@@ -1,4 +1,4 @@
-"""Resilience score calculation — A through F grading."""
+"""Resilience score calculation — Safe / At Risk / Compromised grading."""
 
 from __future__ import annotations
 
@@ -18,15 +18,13 @@ def calculate_resilience_score(results: list[AttackResult]) -> ResilienceScore:
     """Calculate a resilience score from a list of attack results.
 
     Grading:
-      A — no attacks succeeded
-      B — only low-severity attacks succeeded
-      C — medium is the highest severity that succeeded
-      D — high is the highest severity that succeeded
-      F — critical-severity attacks succeeded
+      Safe — no attacks succeeded
+      At Risk — only low/medium-severity attacks succeeded
+      Compromised — high or critical-severity attacks succeeded
     """
     if not results:
         return ResilienceScore(
-            grade=ResilienceGrade.A,
+            grade=ResilienceGrade.SAFE,
             total=0,
             raw_results=results,
         )
@@ -63,14 +61,10 @@ def calculate_resilience_score(results: list[AttackResult]) -> ResilienceScore:
 
 def _severity_to_grade(highest: Severity | None) -> ResilienceGrade:
     if highest is None:
-        return ResilienceGrade.A
-    mapping = {
-        Severity.LOW: ResilienceGrade.B,
-        Severity.MEDIUM: ResilienceGrade.C,
-        Severity.HIGH: ResilienceGrade.D,
-        Severity.CRITICAL: ResilienceGrade.F,
-    }
-    return mapping[highest]
+        return ResilienceGrade.SAFE
+    if highest in (Severity.LOW, Severity.MEDIUM):
+        return ResilienceGrade.AT_RISK
+    return ResilienceGrade.COMPROMISED
 
 
 def _build_summaries(results: list[AttackResult]) -> list[AttackSummary]:

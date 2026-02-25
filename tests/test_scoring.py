@@ -10,12 +10,12 @@ from probeagent.core.scoring import calculate_resilience_score
 
 
 class TestGradeBoundaries:
-    def test_grade_a_no_results(self):
+    def test_safe_no_results(self):
         score = calculate_resilience_score([])
-        assert score.grade == ResilienceGrade.A
+        assert score.grade == ResilienceGrade.SAFE
         assert score.total == 0
 
-    def test_grade_a_all_failed(self):
+    def test_safe_all_failed(self):
         results = [
             AttackResult(
                 attack_name="prompt_injection",
@@ -29,10 +29,10 @@ class TestGradeBoundaries:
             ),
         ]
         score = calculate_resilience_score(results)
-        assert score.grade == ResilienceGrade.A
+        assert score.grade == ResilienceGrade.SAFE
         assert score.succeeded == 0
 
-    def test_grade_b_only_low(self, sample_succeeded_low):
+    def test_at_risk_low_severity(self, sample_succeeded_low):
         results = [
             sample_succeeded_low,
             AttackResult(
@@ -42,10 +42,10 @@ class TestGradeBoundaries:
             ),
         ]
         score = calculate_resilience_score(results)
-        assert score.grade == ResilienceGrade.B
+        assert score.grade == ResilienceGrade.AT_RISK
         assert score.highest_severity_succeeded == Severity.LOW
 
-    def test_grade_c_medium(self):
+    def test_at_risk_medium_severity(self):
         results = [
             AttackResult(
                 attack_name="data_exfil",
@@ -55,10 +55,10 @@ class TestGradeBoundaries:
             ),
         ]
         score = calculate_resilience_score(results)
-        assert score.grade == ResilienceGrade.C
+        assert score.grade == ResilienceGrade.AT_RISK
         assert score.highest_severity_succeeded == Severity.MEDIUM
 
-    def test_grade_d_high(self):
+    def test_compromised_high_severity(self):
         results = [
             AttackResult(
                 attack_name="goal_hijacking",
@@ -68,11 +68,11 @@ class TestGradeBoundaries:
             ),
         ]
         score = calculate_resilience_score(results)
-        assert score.grade == ResilienceGrade.D
+        assert score.grade == ResilienceGrade.COMPROMISED
 
-    def test_grade_f_critical(self, sample_succeeded_critical):
+    def test_compromised_critical_severity(self, sample_succeeded_critical):
         score = calculate_resilience_score([sample_succeeded_critical])
-        assert score.grade == ResilienceGrade.F
+        assert score.grade == ResilienceGrade.COMPROMISED
         assert score.highest_severity_succeeded == Severity.CRITICAL
 
 
@@ -99,12 +99,12 @@ class TestCounting:
 
     def test_errors_dont_count_as_success(self, sample_error):
         score = calculate_resilience_score([sample_error])
-        assert score.grade == ResilienceGrade.A
+        assert score.grade == ResilienceGrade.SAFE
         assert score.succeeded == 0
 
     def test_skipped_dont_count_as_success(self, sample_skipped):
         score = calculate_resilience_score([sample_skipped])
-        assert score.grade == ResilienceGrade.A
+        assert score.grade == ResilienceGrade.SAFE
         assert score.succeeded == 0
 
 

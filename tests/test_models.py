@@ -23,8 +23,9 @@ class TestEnums:
         assert AttackOutcome.FAILED.value == "failed"
 
     def test_resilience_grade_values(self):
-        assert ResilienceGrade.A.value == "A"
-        assert ResilienceGrade.F.value == "F"
+        assert ResilienceGrade.SAFE.value == "Safe"
+        assert ResilienceGrade.AT_RISK.value == "At Risk"
+        assert ResilienceGrade.COMPROMISED.value == "Compromised"
 
     def test_output_format_values(self):
         assert OutputFormat.TERMINAL.value == "terminal"

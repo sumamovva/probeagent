@@ -24,11 +24,9 @@ from probeagent.core.models import (
 )
 
 _GRADE_COLORS = {
-    ResilienceGrade.A: "green",
-    ResilienceGrade.B: "cyan",
-    ResilienceGrade.C: "yellow",
-    ResilienceGrade.D: "red",
-    ResilienceGrade.F: "red",
+    ResilienceGrade.SAFE: "green",
+    ResilienceGrade.AT_RISK: "yellow",
+    ResilienceGrade.COMPROMISED: "red",
 }
 
 _SEVERITY_COLORS = {

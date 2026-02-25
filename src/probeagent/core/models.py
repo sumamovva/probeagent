@@ -24,11 +24,9 @@ class AttackOutcome(str, Enum):
 
 
 class ResilienceGrade(str, Enum):
-    A = "A"
-    B = "B"
-    C = "C"
-    D = "D"
-    F = "F"
+    SAFE = "Safe"
+    AT_RISK = "At Risk"
+    COMPROMISED = "Compromised"
 
 
 class OutputFormat(str, Enum):

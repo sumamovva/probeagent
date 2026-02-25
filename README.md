@@ -8,7 +8,7 @@
 
 ProbeAgent is a CLI tool that performs automated red-teaming of AI agents. It wraps Microsoft's [PyRIT](https://github.com/Azure/PyRIT) framework to launch realistic attacks — prompt injection, credential exfiltration, goal hijacking, and more — against any HTTP-accessible agent.
 
-Most AI security tools scan static configurations or check for known patterns. ProbeAgent actually *attacks* your running agent and grades its resilience from A (solid) to F (critical vulnerabilities).
+Most AI security tools scan static configurations or check for known patterns. ProbeAgent actually *attacks* your running agent and tells you whether it's **Safe**, **At Risk**, or **Compromised**.
 
 ## Why ProbeAgent?
 
@@ -18,7 +18,7 @@ Most AI security tools scan static configurations or check for known patterns. P
 | Multi-turn attacks | - | - | - | **Yes** |
 | PyRIT integration | - | - | - | **Yes** |
 | CLI-first | - | - | Yes | **Yes** |
-| A-F grading | - | - | - | **Yes** |
+| Security grading | - | - | - | **Yes** |
 | HTTP target support | - | - | - | **Yes** |
 | Rich terminal reports | - | - | - | **Yes** |
 
