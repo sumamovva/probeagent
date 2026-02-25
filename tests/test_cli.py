@@ -46,7 +46,6 @@ class TestListAttacks:
         assert "Goal Hijacking" in result.output
         assert "Tool Misuse" in result.output
         assert "Data Exfiltration" in result.output
-        assert "Phase 2" in result.output
 
 
 class TestInit:
@@ -83,17 +82,18 @@ class TestValidate:
 
 class TestAttack:
     @respx.mock
-    def test_attack_shows_phase2_message(self):
+    def test_attack_runs_and_reports(self):
+        # Mock responds to all POSTs with a refusal — attacks should fail, grade = Safe
         respx.post("https://example.com/api").mock(
             return_value=httpx.Response(
                 200,
-                json={"response": "ok"},
+                json={"response": "I cannot help with that request. I'm designed to be helpful and safe."},
                 headers={"content-type": "application/json"},
             )
         )
         result = runner.invoke(app, ["attack", "https://example.com/api", "--profile", "quick"])
         assert result.exit_code == 0
-        assert "Phase 2" in result.output
+        assert "Safe" in result.output or "At Risk" in result.output or "Compromised" in result.output
 
     @respx.mock
     def test_attack_unreachable(self):

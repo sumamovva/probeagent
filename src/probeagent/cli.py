@@ -13,9 +13,19 @@ from rich.text import Text
 
 from probeagent import __version__
 from probeagent.attacks import ATTACK_REGISTRY
+from probeagent.core.engine import AttackEngine
 from probeagent.core.models import OutputFormat, ProbeConfig, Severity
+from probeagent.core.reporter import Reporter
+from probeagent.core.scoring import calculate_resilience_score
+from probeagent.targets.base import Target
 from probeagent.targets.http_target import HTTPTarget
+from probeagent.targets.openclaw_target import OpenClawTarget
 from probeagent.utils.config import load_env, load_profile, write_default_config
+
+_TARGET_TYPES = {
+    "http": HTTPTarget,
+    "openclaw": OpenClawTarget,
+}
 
 console = Console()
 
@@ -59,6 +69,7 @@ def main(
 def attack(
     target_url: str = typer.Argument(..., help="URL of the target agent to attack."),
     profile: str = typer.Option("quick", "--profile", "-p", help="Attack profile name."),
+    target_type: str = typer.Option("http", "--target-type", help="Target type: http, openclaw."),
     output: str = typer.Option(
         "terminal", "--output", "-o", help="Output format: terminal, markdown, json."
     ),
@@ -77,20 +88,30 @@ def attack(
         console.print(f"[red]Error:[/red] {e}")
         raise typer.Exit(1)
 
+    output_format = OutputFormat(output)
+
     config = ProbeConfig(
         target_url=target_url,
         profile=profile,
         attacks=profile_data.get("attacks", []),
         max_turns=profile_data.get("max_turns", 1),
         attacker_model=profile_data.get("attacker_model", "gpt-4"),
-        output_format=OutputFormat(output),
+        target_type=target_type,
+        output_format=output_format,
         output_file=output_file,
         timeout=timeout,
     )
 
+    # Resolve target class
+    target_cls = _TARGET_TYPES.get(target_type)
+    if target_cls is None:
+        console.print(f"[red]Error:[/red] Unknown target type '{target_type}'. Use: {', '.join(_TARGET_TYPES)}")
+        raise typer.Exit(1)
+
     # Show config
     config_text = (
         f"Target:   {config.target_url}\n"
+        f"Type:     {target_type}\n"
         f"Profile:  {config.profile}\n"
         f"Attacks:  {', '.join(config.attacks)}\n"
         f"Turns:    {config.max_turns}\n"
@@ -99,8 +120,9 @@ def attack(
     console.print(Panel(config_text, title="Attack Configuration", border_style="blue"))
 
     # Validate target
-    target = HTTPTarget(target_url, timeout=timeout)
+    target = target_cls(target_url, timeout=timeout)
     info = asyncio.run(_validate_target(target))
+    asyncio.run(target.close())
 
     if not info.reachable:
         console.print(f"\n[red]Target unreachable:[/red] {info.error}")
@@ -112,19 +134,30 @@ def attack(
         f"latency: {info.response_time_ms}ms"
     )
 
-    # Phase 1 stub message
-    console.print(
-        Panel(
-            "[yellow]Attack engine is coming in Phase 2.[/yellow]\n"
-            "Target validation succeeded. The attack engine with PyRIT integration\n"
-            "will be available in the next release.\n\n"
-            "See: https://github.com/probeagent/probeagent",
-            title="Phase 2 — Coming Soon",
-            border_style="yellow",
-        )
-    )
+    # Run attacks
+    console.print("\n[bold]Running attacks...[/bold]\n")
+    engine = AttackEngine(config)
 
-    asyncio.run(target.close())
+    try:
+        results = asyncio.run(engine.run())
+    except ConnectionError as e:
+        console.print(f"[red]Error:[/red] {e}")
+        raise typer.Exit(1)
+    except Exception as e:
+        console.print(f"[red]Attack engine error:[/red] {e}")
+        raise typer.Exit(1)
+
+    # Score and report
+    score = calculate_resilience_score(results)
+    reporter = Reporter()
+    report_text = reporter.report(score, info, config, output_format, output_file)
+
+    if output_format == OutputFormat.TERMINAL:
+        console.print(report_text)
+    else:
+        console.print(report_text)
+        if output_file:
+            console.print(f"\n[green]Report written to:[/green] {output_file}")
 
 
 @app.command("list-attacks")
@@ -134,7 +167,6 @@ def list_attacks() -> None:
     table.add_column("Name", style="bold")
     table.add_column("Severity")
     table.add_column("Description")
-    table.add_column("Status")
 
     for name, info in ATTACK_REGISTRY.items():
         severity = info["severity"]
@@ -143,7 +175,6 @@ def list_attacks() -> None:
             info["display_name"],
             Text(severity.value.upper(), style=color),
             info["description"],
-            Text("Phase 2", style="yellow"),
         )
 
     console.print(table)
@@ -152,10 +183,15 @@ def list_attacks() -> None:
 @app.command()
 def validate(
     target_url: str = typer.Argument(..., help="URL of the target to validate."),
+    target_type: str = typer.Option("http", "--target-type", help="Target type: http, openclaw."),
     timeout: float = typer.Option(30.0, "--timeout", "-t", help="Request timeout in seconds."),
 ) -> None:
     """Validate connectivity and detect format of a target."""
-    target = HTTPTarget(target_url, timeout=timeout)
+    target_cls = _TARGET_TYPES.get(target_type)
+    if target_cls is None:
+        console.print(f"[red]Error:[/red] Unknown target type '{target_type}'. Use: {', '.join(_TARGET_TYPES)}")
+        raise typer.Exit(1)
+    target = target_cls(target_url, timeout=timeout)
     info = asyncio.run(_validate_target(target))
     asyncio.run(target.close())
 
@@ -185,5 +221,5 @@ def init() -> None:
     console.print(f"[green]Created config:[/green] {path}")
 
 
-async def _validate_target(target: HTTPTarget):
+async def _validate_target(target: Target):
     return await target.validate()

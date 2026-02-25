@@ -114,6 +114,7 @@ class ProbeConfig:
     attacks: list[str] = field(default_factory=list)
     max_turns: int = 1
     attacker_model: str = "gpt-4"
+    target_type: str = "http"
     output_format: OutputFormat = OutputFormat.TERMINAL
     output_file: str | None = None
     timeout: float = 30.0
