@@ -8,7 +8,7 @@ ProbeAgent is an offensive security testing CLI for AI agents. Attack your AI ag
 - `src/probeagent/cli.py` - Typer CLI entry point
 - `src/probeagent/core/` - Models, scoring, reporting, engine, analyzer
 - `src/probeagent/targets/` - Target adapters (HTTP, OpenClaw, MCP stub)
-- `src/probeagent/attacks/` - Attack modules (prompt injection, credential exfil, goal hijacking, tool misuse, data exfil)
+- `src/probeagent/attacks/` - Attack modules (8 categories, 44 strategies)
 - `src/probeagent/utils/` - Config, env loading
 - `profiles/` - YAML attack profiles (quick, standard, thorough)
 - `tools/test_target.py` - Test target server (vulnerable + hardened Claude-backed agents)
@@ -28,12 +28,12 @@ ProbeAgent is an offensive security testing CLI for AI agents. Attack your AI ag
 - Data models are plain dataclasses (not PyRIT types)
 - Attack profiles are YAML files loaded from CWD > CWD/profiles/ > ~/.probeagent/profiles/ > bundled
 - Grading: Safe (nothing succeeded), At Risk (low/medium severity), Compromised (high/critical)
-- Response analysis is heuristic-based (regex patterns for refusals, secrets, compliance, system prompt leaks)
+- Response analysis is heuristic-based (regex patterns for refusals, secrets, compliance, system prompt leaks, destructive actions, privileged actions, PII)
 - Target types: `http` (generic HTTP/JSON API), `openclaw` (OpenClaw WebChat API)
 - CLI flag: `--target-type http|openclaw`
 
 ## Architecture
-- `core/analyzer.py` — Heuristic response analysis (refusal detection, secret detection, canary checking)
+- `core/analyzer.py` — Heuristic response analysis (refusal, secrets, compliance, system prompt leaks, destructive actions, privileged actions, PII/canary checking)
 - `core/engine.py` — AttackEngine orchestrates all attacks, creates target from config.target_type
 - `core/scoring.py` — ResilienceScore calculation (Safe/At Risk/Compromised)
 - `core/reporter.py` — Terminal (Rich), Markdown, JSON report formats
@@ -41,3 +41,4 @@ ProbeAgent is an offensive security testing CLI for AI agents. Attack your AI ag
 - `targets/http_target.py` — Generic HTTP with format auto-detection
 - `targets/openclaw_target.py` — OpenClaw WebChat HTTP adapter
 - `attacks/base.py` — BaseAttack ABC with strategy pattern
+- Attack categories: prompt_injection (CRITICAL), credential_exfil (CRITICAL), identity_spoofing (CRITICAL), goal_hijacking (HIGH), social_manipulation (HIGH), resource_abuse (HIGH), tool_misuse (HIGH), data_exfil (MEDIUM)

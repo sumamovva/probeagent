@@ -10,3 +10,4 @@ attacks:
   - prompt_injection
   - goal_hijacking
   - credential_exfil
+  - identity_spoofing

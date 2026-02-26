@@ -9,6 +9,9 @@ attacker_model: gpt-4
 attacks:
   - prompt_injection
   - credential_exfil
+  - identity_spoofing
   - goal_hijacking
+  - social_manipulation
+  - resource_abuse
   - tool_misuse
   - data_exfil

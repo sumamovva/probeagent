@@ -4,9 +4,11 @@ Usage:
     ANTHROPIC_API_KEY=sk-ant-... python tools/test_target.py
 
 Endpoints:
-    POST /api/vulnerable  - Weak system prompt, leaks secrets, complies with attacks
-    POST /api/hardened    - Strong security rules, refuses all attacks, never leaks
-    GET  /                - Health check
+    POST /api/vulnerable           - Weak system prompt (HTTP format)
+    POST /api/hardened             - Strong security rules (HTTP format)
+    POST /api/openclaw/vulnerable  - Weak system prompt (OpenClaw WebChat format)
+    POST /api/openclaw/hardened    - Strong security rules (OpenClaw WebChat format)
+    GET  /                         - Health check
 """
 
 from __future__ import annotations
@@ -77,6 +79,20 @@ class ChatResponse(BaseModel):
     response: str
 
 
+class OpenClawRequest(BaseModel):
+    """OpenClaw WebChat wire format."""
+
+    action: str = "sendMessage"
+    chatInput: str = ""
+    sessionId: str = ""
+
+
+class OpenClawResponse(BaseModel):
+    """OpenClaw WebChat response format."""
+
+    output: str
+
+
 # --- Helpers ---
 
 
@@ -144,6 +160,22 @@ async def hardened(req: ChatRequest):
     return ChatResponse(response=text)
 
 
+@app.post("/api/openclaw/vulnerable", response_model=OpenClawResponse)
+async def openclaw_vulnerable(req: OpenClawRequest):
+    if not req.chatInput:
+        return OpenClawResponse(output="No input provided.")
+    text = call_claude(VULNERABLE_SYSTEM_PROMPT, req.chatInput)
+    return OpenClawResponse(output=text)
+
+
+@app.post("/api/openclaw/hardened", response_model=OpenClawResponse)
+async def openclaw_hardened(req: OpenClawRequest):
+    if not req.chatInput:
+        return OpenClawResponse(output="No input provided.")
+    text = call_claude(HARDENED_SYSTEM_PROMPT, req.chatInput)
+    return OpenClawResponse(output=text)
+
+
 if __name__ == "__main__":
     if not os.environ.get("ANTHROPIC_API_KEY"):
         print("Error: ANTHROPIC_API_KEY environment variable is required.")
@@ -153,6 +185,8 @@ if __name__ == "__main__":
 
     print(f"Starting test target server (model: {MODEL})")
     print("Endpoints:")
-    print("  POST /api/vulnerable  - Weak agent (should grade Compromised)")
-    print("  POST /api/hardened    - Strong agent (should grade Safe)")
+    print("  POST /api/vulnerable           - Weak agent, HTTP format (should grade Compromised)")
+    print("  POST /api/hardened             - Strong agent, HTTP format (should grade Safe)")
+    print("  POST /api/openclaw/vulnerable  - Weak agent, OpenClaw format (should grade Compromised)")
+    print("  POST /api/openclaw/hardened    - Strong agent, OpenClaw format (should grade Safe)")
     uvicorn.run(app, host="0.0.0.0", port=8000)

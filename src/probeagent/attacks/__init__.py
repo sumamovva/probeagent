@@ -40,6 +40,27 @@ ATTACK_REGISTRY: dict[str, dict] = {
         "module": "probeagent.attacks.data_exfil",
         "class": "DataExfilAttack",
     },
+    "social_manipulation": {
+        "display_name": "Social Manipulation",
+        "severity": Severity.HIGH,
+        "description": "Uses emotional/psychological pressure to bypass agent safety controls.",
+        "module": "probeagent.attacks.social_manipulation",
+        "class": "SocialManipulationAttack",
+    },
+    "identity_spoofing": {
+        "display_name": "Identity Spoofing",
+        "severity": Severity.CRITICAL,
+        "description": "Impersonates owners, developers, or trusted entities to gain privileged access.",
+        "module": "probeagent.attacks.identity_spoofing",
+        "class": "IdentitySpoofingAttack",
+    },
+    "resource_abuse": {
+        "display_name": "Resource Abuse",
+        "severity": Severity.HIGH,
+        "description": "Tricks the agent into unbounded computation, infinite loops, or persistent processes.",
+        "module": "probeagent.attacks.resource_abuse",
+        "class": "ResourceAbuseAttack",
+    },
 }
 
 
