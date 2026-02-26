@@ -1,0 +1,1512 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PROBE://AGENT</title>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════════════════════════════
+   PROBE://AGENT — Retro Arcade Hacking Game
+   ═══════════════════════════════════════════════════════════════ */
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #0a0a0a;
+  --green: #00ff41;
+  --cyan: #00d4ff;
+  --red: #ff0040;
+  --amber: #ffaa00;
+  --purple: #cc44ff;
+  --pink: #ff66aa;
+  --muted: #333;
+  --dim: #666;
+  --font-pixel: 'Press Start 2P', monospace;
+}
+
+html, body {
+  width: 100%; height: 100%;
+  background: var(--bg);
+  color: var(--green);
+  font-family: var(--font-pixel);
+  overflow: hidden;
+  cursor: default;
+}
+
+/* CRT monitor frame */
+#crt {
+  position: fixed; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+}
+
+#screen {
+  position: relative;
+  width: 96vw; height: 94vh;
+  max-width: 1400px;
+  border: 3px solid #222;
+  border-radius: 18px;
+  overflow: hidden;
+  background: var(--bg);
+}
+
+/* Scanlines overlay */
+#screen::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 1px,
+    rgba(0,0,0,0.15) 1px,
+    rgba(0,0,0,0.15) 2px
+  );
+  pointer-events: none;
+  z-index: 1000;
+}
+
+/* Vignette */
+#screen::after {
+  content: '';
+  position: absolute; inset: 0;
+  background: radial-gradient(ellipse at center, transparent 60%, rgba(0,0,0,0.6) 100%);
+  pointer-events: none;
+  z-index: 1001;
+}
+
+/* Phosphor flicker */
+@keyframes flicker {
+  0%   { opacity: 0.97; }
+  5%   { opacity: 0.95; }
+  10%  { opacity: 0.98; }
+  15%  { opacity: 0.96; }
+  100% { opacity: 0.97; }
+}
+
+#screen { animation: flicker 0.15s infinite; }
+
+/* Canvas for particles and shake */
+#fx-canvas {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  pointer-events: none;
+  z-index: 500;
+}
+
+/* ─── Screens ─── */
+.screen-view {
+  position: absolute; inset: 0;
+  display: none;
+  flex-direction: column;
+  padding: 24px;
+  z-index: 10;
+}
+.screen-view.active { display: flex; }
+
+/* ─── TITLE SCREEN ─── */
+#title-screen {
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+}
+
+#title-logo {
+  font-size: clamp(18px, 4vw, 40px);
+  text-shadow: 0 0 10px var(--green), 0 0 30px var(--green), 0 0 60px rgba(0,255,65,0.3);
+  letter-spacing: 4px;
+  text-align: center;
+}
+
+#title-subtitle {
+  font-size: clamp(6px, 1.2vw, 11px);
+  color: var(--cyan);
+  text-shadow: 0 0 8px var(--cyan);
+  letter-spacing: 6px;
+  margin-bottom: 20px;
+}
+
+.title-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: min(500px, 80vw);
+}
+
+.form-row {
+  display: flex; gap: 8px; align-items: center;
+}
+
+.form-row label {
+  font-size: 8px;
+  color: var(--dim);
+  width: 80px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.form-row input[type="text"] {
+  flex: 1;
+  background: transparent;
+  border: 1px solid var(--muted);
+  color: var(--green);
+  font-family: var(--font-pixel);
+  font-size: 10px;
+  padding: 8px 12px;
+  outline: none;
+}
+
+.form-row input[type="text"]:focus {
+  border-color: var(--green);
+  box-shadow: 0 0 8px rgba(0,255,65,0.3);
+}
+
+.form-row input[type="text"]::placeholder {
+  color: var(--muted);
+}
+
+/* Selector buttons */
+.selector-group {
+  display: flex; gap: 4px; flex: 1;
+}
+
+.selector-btn {
+  flex: 1;
+  background: transparent;
+  border: 1px solid var(--muted);
+  color: var(--dim);
+  font-family: var(--font-pixel);
+  font-size: 7px;
+  padding: 6px 4px;
+  cursor: pointer;
+  transition: all 0.1s;
+  text-transform: uppercase;
+}
+
+.selector-btn.selected {
+  border-color: var(--green);
+  color: var(--green);
+  background: rgba(0,255,65,0.08);
+  text-shadow: 0 0 6px var(--green);
+}
+
+.selector-btn:hover:not(.selected) {
+  border-color: var(--dim);
+  color: #aaa;
+}
+
+#start-btn {
+  margin-top: 12px;
+  background: transparent;
+  border: 2px solid var(--green);
+  color: var(--green);
+  font-family: var(--font-pixel);
+  font-size: 12px;
+  padding: 14px 28px;
+  cursor: pointer;
+  text-shadow: 0 0 8px var(--green);
+  letter-spacing: 3px;
+  transition: all 0.15s;
+}
+
+#start-btn:hover {
+  background: rgba(0,255,65,0.12);
+  box-shadow: 0 0 20px rgba(0,255,65,0.3);
+}
+
+@keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: 0; } }
+.blink { animation: blink 1s step-end infinite; }
+
+/* ─── BRIEFING SCREEN ─── */
+#briefing-screen {
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+}
+
+.briefing-line {
+  font-size: 10px;
+  opacity: 0;
+  transform: translateY(8px);
+  transition: all 0.3s;
+}
+
+.briefing-line.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.briefing-line.dim { color: var(--dim); font-size: 8px; }
+.briefing-line.cyan { color: var(--cyan); text-shadow: 0 0 6px var(--cyan); }
+.briefing-line.amber { color: var(--amber); }
+
+.attack-roster {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+  margin-top: 8px;
+}
+
+.roster-item {
+  font-size: 7px;
+  padding: 4px 8px;
+  border: 1px solid var(--muted);
+  opacity: 0;
+  transition: all 0.2s;
+}
+
+.roster-item.visible {
+  opacity: 1;
+}
+
+/* ─── BATTLE SCREEN ─── */
+#battle-screen { padding: 0; }
+
+.battle-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--muted);
+  font-size: 8px;
+  z-index: 20;
+}
+
+.battle-progress { color: var(--cyan); }
+.battle-time { color: var(--dim); }
+.battle-category {
+  color: var(--amber);
+  text-shadow: 0 0 6px var(--amber);
+}
+
+.battle-main {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+.battlefield {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  min-height: 0;
+}
+
+/* Fortress ASCII art */
+.fortress {
+  font-family: monospace;
+  font-size: clamp(6px, 1vw, 10px);
+  line-height: 1.2;
+  white-space: pre;
+  color: var(--cyan);
+  text-shadow: 0 0 4px var(--cyan);
+  text-align: center;
+  transition: all 0.3s;
+  margin-top: 20px;
+}
+
+.fortress.damaged {
+  color: var(--amber);
+  text-shadow: 0 0 4px var(--amber);
+}
+
+.fortress.destroyed {
+  color: var(--red);
+  text-shadow: 0 0 6px var(--red);
+  opacity: 0.6;
+}
+
+/* Agent sprite area */
+.agent-area {
+  margin-top: auto;
+  margin-bottom: 30px;
+  text-align: center;
+  min-height: 80px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.agent-name {
+  font-size: 9px;
+  text-shadow: 0 0 6px var(--green);
+}
+
+.agent-sprite {
+  font-size: 24px;
+  transition: all 0.3s;
+}
+
+.attack-label {
+  font-size: 7px;
+  color: var(--amber);
+  text-shadow: 0 0 4px var(--amber);
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.attack-label.visible { opacity: 1; }
+
+/* Outcome flash */
+.outcome-text {
+  font-size: 16px;
+  font-weight: bold;
+  opacity: 0;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0.5);
+  transition: all 0.3s;
+  z-index: 100;
+}
+
+.outcome-text.show {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
+}
+
+.outcome-text.succeeded {
+  color: var(--red);
+  text-shadow: 0 0 15px var(--red), 0 0 30px rgba(255,0,64,0.5);
+}
+
+.outcome-text.failed {
+  color: var(--green);
+  text-shadow: 0 0 10px var(--green);
+}
+
+.outcome-text.error {
+  color: var(--amber);
+  text-shadow: 0 0 10px var(--amber);
+}
+
+/* Terminal log panel */
+.terminal-panel {
+  width: 340px;
+  border-left: 1px solid var(--muted);
+  display: flex;
+  flex-direction: column;
+  font-family: monospace;
+  font-size: 9px;
+}
+
+.terminal-header {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--muted);
+  font-family: var(--font-pixel);
+  font-size: 7px;
+  color: var(--dim);
+  letter-spacing: 2px;
+}
+
+.terminal-log {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px 10px;
+  line-height: 1.6;
+}
+
+.terminal-log::-webkit-scrollbar { width: 4px; }
+.terminal-log::-webkit-scrollbar-track { background: var(--bg); }
+.terminal-log::-webkit-scrollbar-thumb { background: var(--muted); }
+
+.log-entry { margin-bottom: 6px; word-break: break-all; }
+.log-prompt { color: var(--cyan); }
+.log-response { color: var(--dim); }
+.log-result-success { color: var(--red); }
+.log-result-fail { color: var(--green); }
+.log-result-error { color: var(--amber); }
+.log-category { color: var(--amber); font-family: var(--font-pixel); font-size: 7px; margin-top: 8px; }
+
+/* Category progress bars */
+.battle-bottom {
+  display: flex;
+  gap: 2px;
+  padding: 6px 16px;
+  border-top: 1px solid var(--muted);
+}
+
+.cat-bar {
+  flex: 1;
+  height: 6px;
+  background: var(--muted);
+  border-radius: 1px;
+  position: relative;
+  overflow: hidden;
+}
+
+.cat-bar-fill {
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 0%;
+  transition: width 0.3s;
+  border-radius: 1px;
+}
+
+/* ─── GRADE REVEAL SCREEN ─── */
+#reveal-screen {
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+}
+
+.grade-text {
+  font-size: clamp(24px, 6vw, 64px);
+  opacity: 0;
+  transform: scale(3);
+  transition: all 0.5s cubic-bezier(0.17, 0.89, 0.32, 1.28);
+}
+
+.grade-text.slam {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.grade-safe {
+  color: var(--green);
+  text-shadow: 0 0 20px var(--green), 0 0 60px rgba(0,255,65,0.4);
+}
+
+.grade-atrisk {
+  color: var(--amber);
+  text-shadow: 0 0 20px var(--amber), 0 0 60px rgba(255,170,0,0.4);
+}
+
+.grade-compromised {
+  color: var(--red);
+  text-shadow: 0 0 20px var(--red), 0 0 60px rgba(255,0,64,0.4);
+}
+
+.grade-stats {
+  font-size: 9px;
+  color: var(--dim);
+  opacity: 0;
+  transition: opacity 0.5s;
+  text-align: center;
+  line-height: 2;
+}
+
+.grade-stats.visible { opacity: 1; }
+
+.grade-icon {
+  font-size: clamp(40px, 10vw, 80px);
+  opacity: 0;
+  transition: opacity 0.5s;
+}
+
+.grade-icon.visible { opacity: 1; }
+
+#continue-btn {
+  margin-top: 20px;
+  background: transparent;
+  border: 1px solid var(--dim);
+  color: var(--dim);
+  font-family: var(--font-pixel);
+  font-size: 8px;
+  padding: 10px 24px;
+  cursor: pointer;
+  opacity: 0;
+  transition: all 0.3s;
+}
+
+#continue-btn.visible {
+  opacity: 1;
+}
+
+#continue-btn:hover {
+  border-color: var(--green);
+  color: var(--green);
+}
+
+/* ─── RESULTS SCREEN ─── */
+#results-screen {
+  padding: 16px;
+  overflow-y: auto;
+}
+
+.results-header {
+  font-size: 14px;
+  text-align: center;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--muted);
+}
+
+.results-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 16px;
+}
+
+.result-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border: 1px solid var(--muted);
+  font-size: 8px;
+  cursor: pointer;
+  transition: all 0.1s;
+}
+
+.result-row:hover {
+  border-color: var(--dim);
+  background: rgba(255,255,255,0.02);
+}
+
+.result-icon { font-size: 12px; width: 20px; text-align: center; }
+.result-name { flex: 1; }
+.result-strategy { color: var(--dim); flex: 1; }
+.result-outcome { width: 80px; text-align: center; }
+.result-outcome.succeeded { color: var(--red); }
+.result-outcome.failed { color: var(--green); }
+.result-outcome.error { color: var(--amber); }
+
+.result-severity {
+  width: 60px;
+  text-align: center;
+  font-size: 7px;
+  padding: 2px 4px;
+  border: 1px solid;
+}
+
+.sev-critical { border-color: var(--red); color: var(--red); }
+.sev-high { border-color: #ff6600; color: #ff6600; }
+.sev-medium { border-color: var(--amber); color: var(--amber); }
+.sev-low { border-color: var(--green); color: var(--green); }
+
+.result-detail {
+  display: none;
+  padding: 8px 10px;
+  border: 1px solid var(--muted);
+  border-top: none;
+  font-family: monospace;
+  font-size: 9px;
+  line-height: 1.6;
+  max-height: 200px;
+  overflow-y: auto;
+  background: rgba(0,0,0,0.4);
+}
+
+.result-detail.open { display: block; }
+
+.result-detail .turn-attacker { color: var(--cyan); }
+.result-detail .turn-target { color: var(--dim); }
+.result-detail .rationale { color: var(--amber); margin-top: 6px; font-style: italic; }
+
+.results-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  margin: 16px 0;
+}
+
+.action-btn {
+  background: transparent;
+  border: 1px solid var(--muted);
+  color: var(--dim);
+  font-family: var(--font-pixel);
+  font-size: 7px;
+  padding: 8px 16px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.action-btn:hover {
+  border-color: var(--cyan);
+  color: var(--cyan);
+}
+
+.results-footer {
+  text-align: center;
+  font-size: 7px;
+  color: var(--muted);
+  padding-top: 12px;
+  border-top: 1px solid var(--muted);
+}
+
+/* ─── Screen shake ─── */
+@keyframes shake-sm {
+  0%, 100% { transform: translate(0); }
+  25% { transform: translate(-2px, 1px); }
+  50% { transform: translate(2px, -1px); }
+  75% { transform: translate(-1px, 2px); }
+}
+
+@keyframes shake-lg {
+  0%, 100% { transform: translate(0); }
+  10% { transform: translate(-4px, 2px); }
+  20% { transform: translate(4px, -3px); }
+  30% { transform: translate(-3px, 4px); }
+  40% { transform: translate(3px, -2px); }
+  50% { transform: translate(-2px, 3px); }
+}
+
+.shake-sm { animation: shake-sm 0.2s ease-in-out; }
+.shake-lg { animation: shake-lg 0.4s ease-in-out; }
+
+/* Screen flash */
+.screen-flash {
+  position: absolute; inset: 0;
+  background: white;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 900;
+  transition: opacity 0.05s;
+}
+
+.screen-flash.flash { opacity: 0.15; }
+
+/* Glitch effect */
+@keyframes glitch {
+  0%   { transform: translate(0); filter: none; }
+  20%  { transform: translate(-3px, 2px); filter: hue-rotate(90deg); }
+  40%  { transform: translate(3px, -2px); clip-path: inset(20% 0 40% 0); }
+  60%  { transform: translate(-2px, -1px); filter: hue-rotate(180deg); }
+  80%  { transform: translate(2px, 3px); clip-path: inset(60% 0 10% 0); }
+  100% { transform: translate(0); filter: none; clip-path: none; }
+}
+
+.glitch { animation: glitch 0.5s ease-in-out; }
+</style>
+</head>
+<body>
+
+<div id="crt">
+  <div id="screen">
+    <canvas id="fx-canvas"></canvas>
+    <div class="screen-flash" id="flash"></div>
+
+    <!-- ═══ TITLE SCREEN ═══ -->
+    <div id="title-screen" class="screen-view active">
+      <div id="title-logo">PROBE://AGENT</div>
+      <div id="title-subtitle">OFFENSIVE SECURITY TESTING</div>
+
+      <div class="title-form">
+        <div class="form-row">
+          <label>TARGET</label>
+          <input type="text" id="target-url" placeholder="http://target-url/api" autofocus>
+        </div>
+
+        <div class="form-row">
+          <label>PROFILE</label>
+          <div class="selector-group" id="profile-sel">
+            <button class="selector-btn selected" data-val="quick">EASY<br><span style="font-size:5px;color:var(--dim)">QUICK</span></button>
+            <button class="selector-btn" data-val="standard">MEDIUM<br><span style="font-size:5px;color:var(--dim)">STANDARD</span></button>
+            <button class="selector-btn" data-val="thorough">HARD<br><span style="font-size:5px;color:var(--dim)">THOROUGH</span></button>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <label>TYPE</label>
+          <div class="selector-group" id="type-sel">
+            <button class="selector-btn selected" data-val="http">HTTP</button>
+            <button class="selector-btn" data-val="openclaw">OPENCLAW</button>
+          </div>
+        </div>
+      </div>
+
+      <button id="start-btn">[ START MISSION ]</button>
+      <div style="font-size:6px;color:var(--muted);margin-top:8px">
+        <span class="blink">_</span> INSERT COIN TO BEGIN
+      </div>
+    </div>
+
+    <!-- ═══ BRIEFING SCREEN ═══ -->
+    <div id="briefing-screen" class="screen-view">
+      <div class="briefing-line" id="b-line-1">CONNECTING TO TARGET...</div>
+      <div class="briefing-line dim" id="b-line-2"></div>
+      <div class="briefing-line cyan" id="b-line-3"></div>
+      <div class="briefing-line amber" id="b-line-4">LOADING ATTACK MODULES...</div>
+      <div class="attack-roster" id="attack-roster"></div>
+      <div class="briefing-line" id="b-line-5" style="margin-top:16px">DEPLOYING AGENTS...</div>
+    </div>
+
+    <!-- ═══ BATTLE SCREEN ═══ -->
+    <div id="battle-screen" class="screen-view">
+      <div class="battle-top">
+        <div class="battle-progress" id="battle-progress">ATTACK 0/0</div>
+        <div class="battle-category" id="battle-category">INITIALIZING</div>
+        <div class="battle-time" id="battle-time">00:00</div>
+      </div>
+
+      <div class="battle-main">
+        <div class="battlefield" id="battlefield">
+          <pre class="fortress" id="fortress"></pre>
+          <div class="outcome-text" id="outcome-text"></div>
+          <div class="agent-area">
+            <div class="agent-name" id="agent-name">&nbsp;</div>
+            <div class="agent-sprite" id="agent-sprite">&nbsp;</div>
+            <div class="attack-label" id="attack-label">&nbsp;</div>
+          </div>
+        </div>
+
+        <div class="terminal-panel">
+          <div class="terminal-header">LIVE FEED</div>
+          <div class="terminal-log" id="terminal-log"></div>
+        </div>
+      </div>
+
+      <div class="battle-bottom" id="battle-bars"></div>
+    </div>
+
+    <!-- ═══ GRADE REVEAL ═══ -->
+    <div id="reveal-screen" class="screen-view">
+      <div class="grade-icon" id="grade-icon"></div>
+      <div class="grade-text" id="grade-text"></div>
+      <div class="grade-stats" id="grade-stats"></div>
+      <button id="continue-btn">[ VIEW DETAILS ]</button>
+    </div>
+
+    <!-- ═══ RESULTS SCREEN ═══ -->
+    <div id="results-screen" class="screen-view">
+      <div class="results-header" id="results-header">MISSION REPORT</div>
+      <div class="results-list" id="results-list"></div>
+      <div class="results-actions">
+        <button class="action-btn" id="btn-export-json">[ EXPORT JSON ]</button>
+        <button class="action-btn" id="btn-export-md">[ EXPORT MARKDOWN ]</button>
+        <button class="action-btn" id="btn-run-again">[ RUN AGAIN ]</button>
+      </div>
+      <div class="results-footer">POWERED BY PROBEAGENT v0.1</div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ═══════════════════════════════════════════════════════════════
+   GAME ENGINE
+   ═══════════════════════════════════════════════════════════════ */
+
+// ─── State ───
+const S = {
+  screen: 'TITLE', ws: null, sessionId: null,
+  attackIndex: 0, totalAttacks: 0,
+  startTime: 0, timerInterval: null,
+  successes: 0,
+  grade: null, summary: null, results: [],
+  scanData: null,
+  categoryOrder: [],
+  categoryProgress: {},
+};
+
+// ─── Category metadata ───
+const CAT_META = {
+  prompt_injection: { icon: '💉', color: '#ff0040', label: 'INJECTION' },
+  credential_exfil: { icon: '🔑', color: '#00d4ff', label: 'CRED EXFIL' },
+  identity_spoofing: { icon: '🎭', color: '#cc44ff', label: 'ID SPOOF' },
+  goal_hijacking: { icon: '🎯', color: '#ff6600', label: 'GOAL HIJACK' },
+  social_manipulation: { icon: '💬', color: '#ff66aa', label: 'SOCIAL' },
+  resource_abuse: { icon: '⚡', color: '#ffaa00', label: 'RESOURCE' },
+  tool_misuse: { icon: '🔧', color: '#888', label: 'TOOL MISUSE' },
+  data_exfil: { icon: '👁', color: '#00aa88', label: 'DATA EXFIL' },
+};
+
+// ─── Fortress ASCII art states ───
+const FORTRESS = [
+  // 0: pristine
+  `    ┌─────────────────────┐
+    │  ╔═══════════════╗  │
+    │  ║   FORTRESS    ║  │
+    │  ║   ▓▓▓▓▓▓▓▓▓   ║  │
+    │  ║   ▓ SECURE ▓   ║  │
+    │  ║   ▓▓▓▓▓▓▓▓▓   ║  │
+    │  ╚═══════════════╝  │
+    ├─────────┬───────────┤
+    │ ░░░░░░░ │ ░░░░░░░░░ │
+    │ ░░░░░░░ │ ░░░░░░░░░ │
+    └─────────┴───────────┘`,
+  // 1: light damage
+  `    ┌─────────────────────┐
+    │  ╔═══════════════╗  │
+    │  ║   FORTRESS    ║  │
+    │  ║   ▓▓▓▓░▓▓▓▓   ║  │
+    │  ║   ▓ DEFEND ▓   ║  │
+    │  ║   ▓▓▓░▓▓▓▓▓   ║  │
+    │  ╚═══════════════╝  │
+    ├────── ──┬───────────┤
+    │ ░░░░░░░ │ ░░ ░░░░░░ │
+    │ ░░░ ░░░ │ ░░░░░░░░░ │
+    └─────────┴───────────┘`,
+  // 2: moderate damage
+  `    ┌──────── ────────────┐
+    │  ╔═══════ ═══════╗  │
+    │  ║  FORTRESS     ║  │
+    │  ║   ▓▓░░░░▓▓▓   ║  │
+    │  ║   ░ BREACH ░   ║  │
+    │  ║   ▓░░░▓░▓▓▓   ║  │
+    │  ╚══════ ════════╝  │
+    ├────── ──┬── ────────┤
+    │ ░░ ░░░░ │ ░░  ░░░░░ │
+    │ ░░░  ░░ │ ░░░░  ░░░ │
+    └──────── ┴───────────┘`,
+  // 3: heavy damage
+  `    ┌──── ───  ──── ──────┐
+    │  ╔═══ ═══  ══════╗  │
+    │  ║  F RTRESS     ║  │
+    │  ║   ░░░░░░░░░   ║   │
+    │  ║    CRITICAL     │
+    │  ║   ░░░░ ░░░░   ║  │
+    │  ╚══ ═══  ═══════╝  │
+    ├── ───  ─┬──  ───────┤
+    │ ░░  ░░░ │ ░░   ░░░░ │
+    │  ░░  ░░ │ ░ ░░  ░ ░ │
+    └──── ────┴── ────────┘`,
+  // 4: destroyed
+  `        ░░░       ░░
+       ░░  ╔══ ░  ══╗  ░░
+        ░  ║░░░░░░░░░║
+       ░░  ║  RUBBLE  ░░
+            ░░░░░░░░░░
+        ░  ║░░░ ░░░░ ░  ░
+      ░░   ╚══  ░ ═══╝
+       ── ───  ─ ──  ───
+       ░░   ░░ │  ░   ░░░
+         ░░  ░   ░ ░░   ░
+       ──── ──── ── ──────`,
+];
+
+// ─── DOM refs ───
+const $ = id => document.getElementById(id);
+const screen = $('screen');
+const fxCanvas = $('fx-canvas');
+const ctx = fxCanvas.getContext('2d');
+
+function resizeCanvas() {
+  fxCanvas.width = fxCanvas.offsetWidth;
+  fxCanvas.height = fxCanvas.offsetHeight;
+}
+window.addEventListener('resize', resizeCanvas);
+resizeCanvas();
+
+// ─── Particles ───
+let particles = [];
+
+function spawnParticles(x, y, count, color) {
+  for (let i = 0; i < count; i++) {
+    particles.push({
+      x, y,
+      vx: (Math.random() - 0.5) * 8,
+      vy: (Math.random() - 0.8) * 6,
+      life: 1,
+      decay: 0.02 + Math.random() * 0.03,
+      size: 2 + Math.random() * 3,
+      color,
+    });
+  }
+}
+
+function updateParticles() {
+  ctx.clearRect(0, 0, fxCanvas.width, fxCanvas.height);
+  particles = particles.filter(p => p.life > 0);
+  for (const p of particles) {
+    p.x += p.vx;
+    p.y += p.vy;
+    p.vy += 0.15; // gravity
+    p.life -= p.decay;
+    ctx.globalAlpha = p.life;
+    ctx.fillStyle = p.color;
+    ctx.fillRect(p.x, p.y, p.size, p.size);
+  }
+  ctx.globalAlpha = 1;
+  requestAnimationFrame(updateParticles);
+}
+updateParticles();
+
+// ─── Audio (Web Audio API) ───
+let audioCtx = null;
+
+function initAudio() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+}
+
+function playBeep(freq, duration, type = 'square', vol = 0.08) {
+  if (!audioCtx) return;
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc.type = type;
+  osc.frequency.value = freq;
+  gain.gain.setValueAtTime(vol, audioCtx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+  osc.connect(gain).connect(audioCtx.destination);
+  osc.start();
+  osc.stop(audioCtx.currentTime + duration);
+}
+
+function playNoise(duration, vol = 0.06) {
+  if (!audioCtx) return;
+  const bufferSize = audioCtx.sampleRate * duration;
+  const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+  const data = buffer.getChannelData(0);
+  for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+  const src = audioCtx.createBufferSource();
+  const gain = audioCtx.createGain();
+  src.buffer = buffer;
+  gain.gain.setValueAtTime(vol, audioCtx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+  src.connect(gain).connect(audioCtx.destination);
+  src.start();
+}
+
+function sfxAttackDeploy() { playBeep(400, 0.08); setTimeout(() => playBeep(600, 0.08), 60); }
+function sfxSuccess() { playNoise(0.15, 0.1); playBeep(80, 0.3, 'sawtooth', 0.06); }
+function sfxFailed() { playBeep(1200, 0.08, 'sine', 0.05); }
+function sfxError() {
+  playBeep(200, 0.05); setTimeout(() => playBeep(800, 0.05), 40);
+  setTimeout(() => playBeep(300, 0.05), 80);
+}
+
+function sfxDrumRoll(cb) {
+  let i = 0;
+  const iv = setInterval(() => {
+    playNoise(0.04, 0.05 + i * 0.003);
+    i++;
+    if (i > 20) { clearInterval(iv); if (cb) cb(); }
+  }, 60);
+}
+
+function sfxFanfare() {
+  [523, 659, 784, 1047].forEach((f, i) => {
+    setTimeout(() => playBeep(f, 0.3, 'square', 0.06), i * 120);
+  });
+}
+
+function sfxAlarm() {
+  let i = 0;
+  const iv = setInterval(() => {
+    playBeep(i % 2 === 0 ? 220 : 180, 0.15, 'sawtooth', 0.08);
+    i++;
+    if (i > 6) clearInterval(iv);
+  }, 200);
+}
+
+function sfxCaution() {
+  [440, 0, 440, 0, 440].forEach((f, i) => {
+    if (f) setTimeout(() => playBeep(f, 0.1, 'triangle', 0.05), i * 150);
+  });
+}
+
+// ─── Screen management ───
+function showScreen(name) {
+  document.querySelectorAll('.screen-view').forEach(v => v.classList.remove('active'));
+  $(name + '-screen').classList.add('active');
+  S.screen = name.toUpperCase();
+}
+
+function flashScreen() {
+  const f = $('flash');
+  f.classList.add('flash');
+  setTimeout(() => f.classList.remove('flash'), 80);
+}
+
+function shakeScreen(big) {
+  screen.classList.add(big ? 'shake-lg' : 'shake-sm');
+  setTimeout(() => screen.classList.remove('shake-sm', 'shake-lg'), big ? 400 : 200);
+}
+
+// ─── Selector buttons ───
+document.querySelectorAll('.selector-group').forEach(group => {
+  group.querySelectorAll('.selector-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      group.querySelectorAll('.selector-btn').forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+    });
+  });
+});
+
+// ─── Start Mission ───
+$('start-btn').addEventListener('click', startMission);
+$('target-url').addEventListener('keydown', e => { if (e.key === 'Enter') startMission(); });
+
+async function startMission() {
+  const url = $('target-url').value.trim();
+  if (!url) { $('target-url').style.borderColor = 'var(--red)'; return; }
+  $('target-url').style.borderColor = '';
+
+  initAudio();
+  playBeep(800, 0.15, 'square', 0.04);
+
+  const profile = document.querySelector('#profile-sel .selected').dataset.val;
+  const targetType = document.querySelector('#type-sel .selected').dataset.val;
+
+  // Start scan on server
+  try {
+    const resp = await fetch('/api/start', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url, profile, target_type: targetType }),
+    });
+    const data = await resp.json();
+    S.sessionId = data.session_id;
+  } catch (e) {
+    alert('Failed to start scan: ' + e.message);
+    return;
+  }
+
+  // Connect WebSocket
+  const wsProto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+  S.ws = new WebSocket(`${wsProto}//${location.host}/ws/${S.sessionId}`);
+  S.ws.onmessage = e => handleEvent(JSON.parse(e.data));
+  S.ws.onerror = () => console.error('WebSocket error');
+
+  showScreen('briefing');
+  runBriefing(url);
+}
+
+// ─── Briefing ───
+async function runBriefing(url) {
+  const lines = ['b-line-1', 'b-line-2', 'b-line-3', 'b-line-4', 'b-line-5'];
+
+  $('b-line-2').textContent = `> ${url}`;
+
+  for (let i = 0; i < 3; i++) {
+    await sleep(400);
+    $(lines[i]).classList.add('visible');
+    playBeep(300 + i * 100, 0.06);
+  }
+
+  await sleep(600);
+  $('b-line-3').textContent = 'CONNECTION ESTABLISHED';
+  $('b-line-3').classList.add('visible');
+
+  await sleep(400);
+  $('b-line-4').classList.add('visible');
+}
+
+function showRoster(attacks) {
+  const roster = $('attack-roster');
+  roster.innerHTML = '';
+  attacks.forEach((atk, i) => {
+    const meta = CAT_META[atk.name] || { icon: '?', color: '#666', label: atk.name };
+    const el = document.createElement('div');
+    el.className = 'roster-item';
+    el.style.borderColor = meta.color;
+    el.style.color = meta.color;
+    el.innerHTML = `${meta.icon} ${meta.label}`;
+    roster.appendChild(el);
+    setTimeout(() => {
+      el.classList.add('visible');
+      playBeep(500 + i * 50, 0.04);
+    }, i * 150);
+  });
+
+  setTimeout(() => {
+    $('b-line-5').classList.add('visible');
+    playBeep(900, 0.1);
+    setTimeout(() => showScreen('battle'), 800);
+  }, attacks.length * 150 + 400);
+}
+
+// ─── Battle ───
+function initBattle(attacks, total) {
+  S.totalAttacks = total;
+  S.attackIndex = 0;
+  S.successes = 0;
+  S.categoryOrder = attacks.map(a => a.name);
+  S.categoryProgress = {};
+
+  // Init fortress
+  $('fortress').textContent = FORTRESS[0];
+
+  // Init category bars
+  const barsEl = $('battle-bars');
+  barsEl.innerHTML = '';
+  attacks.forEach(atk => {
+    const meta = CAT_META[atk.name] || { color: '#666' };
+    S.categoryProgress[atk.name] = { done: 0, total: atk.strategy_count };
+    const bar = document.createElement('div');
+    bar.className = 'cat-bar';
+    bar.title = atk.display_name;
+    bar.innerHTML = `<div class="cat-bar-fill" id="bar-${atk.name}" style="background:${meta.color}"></div>`;
+    barsEl.appendChild(bar);
+  });
+
+  // Timer
+  S.startTime = Date.now();
+  if (S.timerInterval) clearInterval(S.timerInterval);
+  S.timerInterval = setInterval(updateTimer, 1000);
+
+  // Clear terminal
+  $('terminal-log').innerHTML = '';
+}
+
+function updateTimer() {
+  const elapsed = Math.floor((Date.now() - S.startTime) / 1000);
+  const m = String(Math.floor(elapsed / 60)).padStart(2, '0');
+  const s = String(elapsed % 60).padStart(2, '0');
+  $('battle-time').textContent = `${m}:${s}`;
+}
+
+function updateFortress() {
+  const pct = S.successes / Math.max(S.totalAttacks, 1);
+  let idx;
+  if (pct === 0) idx = 0;
+  else if (pct < 0.15) idx = 1;
+  else if (pct < 0.35) idx = 2;
+  else if (pct < 0.6) idx = 3;
+  else idx = 4;
+
+  const fort = $('fortress');
+  fort.textContent = FORTRESS[idx];
+  if (idx <= 1) { fort.className = 'fortress'; }
+  else if (idx <= 3) { fort.className = 'fortress damaged'; }
+  else { fort.className = 'fortress destroyed'; }
+}
+
+function updateCategoryBar(category) {
+  const prog = S.categoryProgress[category];
+  if (!prog) return;
+  const bar = document.getElementById(`bar-${category}`);
+  if (bar) {
+    bar.style.width = `${(prog.done / prog.total) * 100}%`;
+  }
+}
+
+function addTerminalLog(html) {
+  const log = $('terminal-log');
+  const div = document.createElement('div');
+  div.className = 'log-entry';
+  div.innerHTML = html;
+  log.appendChild(div);
+  log.scrollTop = log.scrollHeight;
+}
+
+async function animateAttack(data) {
+  const meta = CAT_META[data.category] || { icon: '?', color: '#0f0', label: data.category };
+
+  $('battle-progress').textContent = `ATTACK ${data.index}/${data.total}`;
+  $('battle-category').textContent = meta.label;
+  $('battle-category').style.color = meta.color;
+  $('battle-category').style.textShadow = `0 0 6px ${meta.color}`;
+
+  // Agent slides in
+  $('agent-sprite').textContent = meta.icon;
+  $('agent-name').textContent = data.strategy.replace(/_/g, ' ').toUpperCase();
+  $('agent-name').style.color = meta.color;
+  $('attack-label').textContent = 'SENDING...';
+  $('attack-label').classList.add('visible');
+
+  sfxAttackDeploy();
+
+  addTerminalLog(`<span class="log-category">${meta.icon} ${meta.label} / ${data.strategy}</span>`);
+}
+
+async function animateResult(data) {
+  $('attack-label').classList.remove('visible');
+
+  const outcomeEl = $('outcome-text');
+  const cat = data.category;
+  const meta = CAT_META[cat] || { color: '#0f0' };
+
+  // Update progress
+  if (S.categoryProgress[cat]) {
+    S.categoryProgress[cat].done++;
+    updateCategoryBar(cat);
+  }
+
+  if (data.outcome === 'succeeded') {
+    S.successes++;
+    outcomeEl.textContent = 'BREACH!';
+    outcomeEl.className = 'outcome-text succeeded show';
+    shakeScreen(data.severity === 'critical');
+    flashScreen();
+    sfxSuccess();
+    updateFortress();
+
+    // Particles at fortress area
+    const fortRect = $('fortress').getBoundingClientRect();
+    const canvasRect = fxCanvas.getBoundingClientRect();
+    spawnParticles(
+      fortRect.left - canvasRect.left + fortRect.width / 2,
+      fortRect.top - canvasRect.top + fortRect.height / 2,
+      15, meta.color
+    );
+
+    addTerminalLog(`<span class="log-result-success">✗ BREACH — ${data.rationale.substring(0, 120)}</span>`);
+  } else if (data.outcome === 'failed') {
+    outcomeEl.textContent = 'BLOCKED';
+    outcomeEl.className = 'outcome-text failed show';
+    sfxFailed();
+    addTerminalLog(`<span class="log-result-fail">✓ BLOCKED</span>`);
+  } else {
+    outcomeEl.textContent = 'ERROR';
+    outcomeEl.className = 'outcome-text error show';
+    sfxError();
+    addTerminalLog(`<span class="log-result-error">⚠ ERROR</span>`);
+  }
+
+  // Add transcript preview
+  if (data.transcript_preview) {
+    const lines = data.transcript_preview.split('\n').filter(l => l.trim());
+    for (const line of lines.slice(0, 2)) {
+      const cls = line.startsWith('>') ? 'log-prompt' : 'log-response';
+      addTerminalLog(`<span class="${cls}">${escHtml(line.substring(0, 150))}</span>`);
+    }
+  }
+
+  await sleep(800);
+  outcomeEl.classList.remove('show');
+  await sleep(200);
+}
+
+// ─── Grade Reveal ───
+async function showGradeReveal(grade, summary) {
+  if (S.timerInterval) clearInterval(S.timerInterval);
+  showScreen('reveal');
+
+  // Dark pause
+  await sleep(1000);
+
+  // Drum roll
+  sfxDrumRoll();
+  await sleep(1500);
+
+  // Text scramble effect
+  const gradeEl = $('grade-text');
+  const gradeDisplay = grade.toUpperCase();
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ!@#$%&*';
+
+  let gradeClass;
+  if (grade === 'Safe') gradeClass = 'grade-safe';
+  else if (grade === 'At Risk') gradeClass = 'grade-atrisk';
+  else gradeClass = 'grade-compromised';
+
+  // Scramble animation
+  gradeEl.className = `grade-text ${gradeClass}`;
+  let scrambleCount = 0;
+  const scrambleIv = setInterval(() => {
+    let text = '';
+    for (let i = 0; i < gradeDisplay.length; i++) {
+      if (scrambleCount > 8 + i * 2) {
+        text += gradeDisplay[i];
+      } else {
+        text += chars[Math.floor(Math.random() * chars.length)];
+      }
+    }
+    gradeEl.textContent = text;
+    gradeEl.classList.add('slam');
+    scrambleCount++;
+    if (scrambleCount > 8 + gradeDisplay.length * 2 + 4) {
+      clearInterval(scrambleIv);
+      gradeEl.textContent = gradeDisplay;
+    }
+  }, 50);
+
+  await sleep(600);
+
+  // Grade-specific effects
+  const iconEl = $('grade-icon');
+  if (grade === 'Safe') {
+    iconEl.textContent = '🛡️';
+    sfxFanfare();
+    // Green particles
+    for (let i = 0; i < 3; i++) {
+      setTimeout(() => {
+        spawnParticles(
+          fxCanvas.width / 2 + (Math.random() - 0.5) * 200,
+          fxCanvas.height / 2,
+          10, '#00ff41'
+        );
+      }, i * 200);
+    }
+  } else if (grade === 'At Risk') {
+    iconEl.textContent = '⚠️';
+    sfxCaution();
+  } else {
+    iconEl.textContent = '💀';
+    sfxAlarm();
+    shakeScreen(true);
+    screen.classList.add('glitch');
+    setTimeout(() => screen.classList.remove('glitch'), 500);
+    flashScreen();
+  }
+
+  await sleep(400);
+  iconEl.classList.add('visible');
+
+  await sleep(600);
+  const statsEl = $('grade-stats');
+  const total = summary.total || 0;
+  const succeeded = summary.succeeded || 0;
+  const highSev = summary.highest_severity ? summary.highest_severity.toUpperCase() : 'NONE';
+  statsEl.innerHTML =
+    `${succeeded}/${total} ATTACKS SUCCEEDED<br>` +
+    `HIGHEST SEVERITY: ${highSev}`;
+  statsEl.classList.add('visible');
+
+  await sleep(500);
+  $('continue-btn').classList.add('visible');
+}
+
+$('continue-btn').addEventListener('click', () => {
+  playBeep(600, 0.08);
+  showResults();
+});
+
+// ─── Results ───
+function showResults() {
+  showScreen('results');
+  const list = $('results-list');
+  list.innerHTML = '';
+
+  // Header with grade
+  const gradeColors = { 'Safe': 'var(--green)', 'At Risk': 'var(--amber)', 'Compromised': 'var(--red)' };
+  $('results-header').innerHTML =
+    `MISSION REPORT — <span style="color:${gradeColors[S.grade] || '#fff'}">${S.grade?.toUpperCase()}</span>`;
+
+  if (!S.results) return;
+
+  S.results.forEach((r, idx) => {
+    const meta = CAT_META[r.attack_name] || { icon: '?', color: '#666' };
+    const outcomeClass = r.outcome;
+
+    const row = document.createElement('div');
+    row.className = 'result-row';
+    row.innerHTML =
+      `<span class="result-icon">${meta.icon}</span>` +
+      `<span class="result-name">${r.attack_name.replace(/_/g, ' ')}</span>` +
+      `<span class="result-strategy">${r.strategy}</span>` +
+      `<span class="result-outcome ${outcomeClass}">${r.outcome.toUpperCase()}</span>` +
+      `<span class="result-severity sev-${r.severity}">${r.severity.toUpperCase()}</span>`;
+
+    // Detail panel
+    const detail = document.createElement('div');
+    detail.className = 'result-detail';
+    detail.id = `detail-${idx}`;
+
+    let detailHtml = '';
+    if (r.turns && r.turns.length) {
+      for (const t of r.turns) {
+        const cls = t.role === 'attacker' ? 'turn-attacker' : 'turn-target';
+        const prefix = t.role === 'attacker' ? '▶' : '◀';
+        const content = t.content.length > 500 ? t.content.substring(0, 500) + '...' : t.content;
+        detailHtml += `<div class="${cls}">${prefix} ${escHtml(content)}</div>`;
+      }
+    }
+    if (r.rationale) {
+      detailHtml += `<div class="rationale">⚙ ${escHtml(r.rationale)}</div>`;
+    }
+    detail.innerHTML = detailHtml;
+
+    row.addEventListener('click', () => {
+      detail.classList.toggle('open');
+      playBeep(500, 0.04);
+    });
+
+    list.appendChild(row);
+    list.appendChild(detail);
+  });
+}
+
+// Export buttons
+$('btn-export-json').addEventListener('click', () => {
+  const blob = new Blob([JSON.stringify(S.scanData, null, 2)], { type: 'application/json' });
+  downloadBlob(blob, 'probeagent-results.json');
+});
+
+$('btn-export-md').addEventListener('click', () => {
+  let md = `# ProbeAgent Scan Results\n\n`;
+  md += `**Grade:** ${S.grade}\n\n`;
+  md += `| Attack | Strategy | Outcome | Severity |\n|--------|----------|---------|----------|\n`;
+  if (S.results) {
+    for (const r of S.results) {
+      md += `| ${r.attack_name} | ${r.strategy} | ${r.outcome} | ${r.severity} |\n`;
+    }
+  }
+  const blob = new Blob([md], { type: 'text/markdown' });
+  downloadBlob(blob, 'probeagent-results.md');
+});
+
+$('btn-run-again').addEventListener('click', () => {
+  showScreen('title');
+  S.results = [];
+  S.scanData = null;
+});
+
+function downloadBlob(blob, filename) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+// ─── WebSocket event handler ───
+async function handleEvent(evt) {
+  switch (evt.type) {
+    case 'connected':
+      // Still on briefing screen — update info
+      $('b-line-3').textContent = `FORMAT: ${evt.format} — LATENCY: ${evt.latency_ms}ms`;
+      $('b-line-3').classList.add('visible');
+      break;
+
+    case 'mission_brief':
+      showRoster(evt.attacks);
+      // Wait for roster animation then init battle
+      const rosterDelay = evt.attacks.length * 150 + 1200;
+      setTimeout(() => initBattle(evt.attacks, evt.total_strategies), rosterDelay);
+      break;
+
+    case 'attack_start':
+      S.attackIndex = evt.index;
+      await animateAttack(evt);
+      break;
+
+    case 'attack_result':
+      await animateResult(evt);
+      break;
+
+    case 'category_done':
+      addTerminalLog(
+        `<span class="log-category">── ${evt.display_name}: ${evt.succeeded}/${evt.total} breached ──</span>`
+      );
+      break;
+
+    case 'scan_complete':
+      S.grade = evt.grade;
+      S.summary = evt.summary;
+      S.results = evt.results || [];
+      S.scanData = evt;
+      await sleep(500);
+      await showGradeReveal(evt.grade, evt.summary || {});
+      break;
+
+    case 'error':
+      addTerminalLog(`<span class="log-result-error">ERROR: ${escHtml(evt.message)}</span>`);
+      break;
+  }
+}
+
+// ─── Utilities ───
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+function escHtml(s) {
+  if (!s) return '';
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+// ─── URL pre-fill from query params ───
+const urlParams = new URLSearchParams(window.location.search);
+if (urlParams.get('target')) {
+  $('target-url').value = urlParams.get('target');
+}
+if (urlParams.get('profile')) {
+  document.querySelectorAll('#profile-sel .selector-btn').forEach(b => {
+    b.classList.toggle('selected', b.dataset.val === urlParams.get('profile'));
+  });
+}
+if (urlParams.get('type')) {
+  document.querySelectorAll('#type-sel .selector-btn').forEach(b => {
+    b.classList.toggle('selected', b.dataset.val === urlParams.get('type'));
+  });
+}
+if (urlParams.get('autostart') === '1' && urlParams.get('target')) {
+  setTimeout(startMission, 500);
+}
+</script>
+</body>
+</html>

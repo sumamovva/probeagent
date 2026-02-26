@@ -36,6 +36,11 @@ dev = [
     "ruff>=0.4",
     "respx>=0.21",
 ]
+game = [
+    "fastapi>=0.111",
+    "uvicorn>=0.30",
+    "websockets>=12.0",
+]
 test-target = [
     "fastapi>=0.111",
     "uvicorn>=0.30",
@@ -47,6 +52,9 @@ probeagent = "probeagent.cli:app"
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.setuptools.package-data]
+probeagent = ["web/*.html"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"

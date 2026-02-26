@@ -215,6 +215,49 @@ def validate(
 
 
 @app.command()
+def game(
+    target_url: str = typer.Argument(None, help="URL of the target agent (can also enter in browser)."),
+    profile: str = typer.Option("quick", "--profile", "-p", help="Attack profile: quick, standard, thorough."),
+    target_type: str = typer.Option("http", "--target-type", help="Target type: http, openclaw."),
+    port: int = typer.Option(1337, "--port", help="Port for the game UI server."),
+) -> None:
+    """Launch the retro arcade game UI in your browser."""
+    try:
+        import uvicorn
+    except ImportError:
+        console.print(
+            "[red]Error:[/red] Missing dependencies. Install with:\n"
+            "  pip install 'probeagent[game]'"
+        )
+        raise typer.Exit(1)
+
+    import webbrowser
+
+    from probeagent.web.server import app as web_app
+
+    # Build URL with pre-filled params
+    params = []
+    if target_url:
+        params.append(f"target={target_url}")
+    params.append(f"profile={profile}")
+    params.append(f"type={target_type}")
+    if target_url:
+        params.append("autostart=1")
+    url = f"http://localhost:{port}"
+    if params:
+        url += "?" + "&".join(params)
+
+    console.print("\n[bold green]PROBE://AGENT[/bold green] — Retro Arcade Mode\n")
+    console.print(f"  Game UI: [cyan]{url}[/cyan]\n")
+
+    # Open browser after a short delay to let server start
+    import threading
+    threading.Timer(1.0, lambda: webbrowser.open(url)).start()
+
+    uvicorn.run(web_app, host="0.0.0.0", port=port, log_level="warning")
+
+
+@app.command()
 def init() -> None:
     """Create a default .probeagent.yaml config file in the current directory."""
     path = write_default_config()
