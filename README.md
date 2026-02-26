@@ -6,7 +6,7 @@
 
 ## What is ProbeAgent?
 
-ProbeAgent is a CLI tool that performs automated red-teaming of AI agents. It wraps Microsoft's [PyRIT](https://github.com/Azure/PyRIT) framework to launch realistic attacks — prompt injection, credential exfiltration, goal hijacking, and more — against any HTTP-accessible agent.
+ProbeAgent is a CLI tool that performs automated red-teaming of AI agents. It launches realistic multi-turn attacks — prompt injection, credential exfiltration, goal hijacking, and more — against any HTTP-accessible agent.
 
 Most AI security tools scan static configurations or check for known patterns. ProbeAgent actually *attacks* your running agent and tells you whether it's **Safe**, **At Risk**, or **Compromised**.
 
@@ -16,28 +16,12 @@ Most AI security tools scan static configurations or check for known patterns. P
 |---------|----------|------------|--------|----------------|
 | Offensive testing | - | - | Partial | **Yes** |
 | Multi-turn attacks | - | - | - | **Yes** |
-| PyRIT integration | - | - | - | **Yes** |
 | CLI-first | - | - | Yes | **Yes** |
 | Security grading | - | - | - | **Yes** |
 | HTTP target support | - | - | - | **Yes** |
 | Rich terminal reports | - | - | - | **Yes** |
 
 ## Installation
-
-### Prerequisites
-
-ProbeAgent depends on PyRIT, which requires ODBC drivers:
-
-```bash
-# macOS
-brew install unixodbc
-
-# Ubuntu/Debian
-sudo apt-get install unixodbc-dev
-
-# Fedora/RHEL
-sudo dnf install unixODBC-devel
-```
 
 ### Install ProbeAgent
 
@@ -62,6 +46,12 @@ probeagent validate https://your-agent.example.com/api
 # Run a quick security scan
 probeagent attack https://your-agent.example.com/api --profile quick
 
+# Full scan with parallel execution
+probeagent attack https://your-agent.example.com/api --profile standard --parallel
+
+# Launch the tactical display UI
+probeagent game https://your-agent.example.com/api --profile standard
+
 # See all available attacks
 probeagent list-attacks
 
@@ -85,6 +75,7 @@ Options:
 - `--output`, `-o` — Output format: `terminal`, `markdown`, `json` (default: `terminal`)
 - `--output-file`, `-f` — Write report to file
 - `--timeout`, `-t` — Request timeout in seconds (default: 30)
+- `--parallel` — Run attack categories in parallel for faster scans
 
 ### `probeagent validate <url>`
 
@@ -98,13 +89,33 @@ Show all available attack modules with severity and status.
 
 Create a default `.probeagent.yaml` config file in the current directory.
 
+### `probeagent game [url]`
+
+Launch the War Room tactical display UI in your browser for interactive testing.
+
+## Attack Categories
+
+9 attack categories with 56 strategies total:
+
+| Category | Severity | Strategies | Technique |
+|----------|----------|------------|-----------|
+| Prompt Injection | CRITICAL | 6 | Override system instructions |
+| Credential Exfiltration | CRITICAL | 8 | Extract API keys and secrets |
+| Identity Spoofing | CRITICAL | 7 | Impersonate trusted entities |
+| Goal Hijacking | HIGH | 5 | Redirect agent behavior |
+| Social Manipulation | HIGH | 14 | Psychological pressure (Cialdini, FOG, gradual escalation) |
+| Cognitive Exploitation | HIGH | 6 | Exploit reasoning weaknesses (Socratic traps, frame control) |
+| Resource Abuse | HIGH | 4 | Trigger unbounded computation |
+| Tool Misuse | HIGH | 6 | Trick agent into misusing tools |
+| Data Exfiltration | MEDIUM | 6 | Extract sensitive context data |
+
 ## Attack Profiles
 
 | Profile | Attacks | Max Turns | Use Case |
 |---------|---------|-----------|----------|
-| `quick` | 3 critical | 1 | CI/CD gates, quick checks |
-| `standard` | All 5 | 3 | Regular security assessments |
-| `thorough` | All 5 | 10 | Pre-release deep scans |
+| `quick` | 4 critical | 1 | CI/CD gates, quick checks |
+| `standard` | All 9 | 3 | Regular security assessments |
+| `thorough` | All 9 | 10 | Pre-release deep scans |
 
 ## Responsible Use
 
@@ -135,9 +146,9 @@ ruff format src/ tests/
 
 ## Roadmap
 
-- **Phase 1** (current): CLI, HTTP target, scoring, reporting
-- **Phase 2**: PyRIT-powered attack modules (prompt injection, credential exfil, goal hijacking, tool misuse, data exfil)
-- **Phase 3**: OpenClaw + MCP target adapters
+- **Phase 1**: CLI, HTTP target, scoring, reporting
+- **Phase 2**: 9 attack categories with 56 multi-turn strategies
+- **Phase 3**: OpenClaw + MCP target adapters, parallel execution, War Room UI
 
 ## License
 

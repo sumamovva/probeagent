@@ -8,11 +8,11 @@ ProbeAgent is an offensive security testing CLI for AI agents. Attack your AI ag
 - `src/probeagent/cli.py` - Typer CLI entry point
 - `src/probeagent/core/` - Models, scoring, reporting, engine, analyzer
 - `src/probeagent/targets/` - Target adapters (HTTP, OpenClaw, MCP stub)
-- `src/probeagent/attacks/` - Attack modules (8 categories, 44 strategies)
+- `src/probeagent/attacks/` - Attack modules (9 categories, 56 strategies)
 - `src/probeagent/utils/` - Config, env loading
 - `profiles/` - YAML attack profiles (quick, standard, thorough)
 - `tools/test_target.py` - Test target server (vulnerable + hardened Claude-backed agents)
-- `tests/` - pytest test suite (121 tests)
+- `tests/` - pytest test suite
 
 ## Development Commands
 - Install: `uv pip install -e ".[dev]"` (or `pip install -e ".[dev]"`)
@@ -25,20 +25,23 @@ ProbeAgent is an offensive security testing CLI for AI agents. Attack your AI ag
 ## Key Conventions
 - All async code uses `httpx` for HTTP, `asyncio` for concurrency
 - CLI uses `typer` with `rich` for output
-- Data models are plain dataclasses (not PyRIT types)
+- Data models are plain dataclasses
 - Attack profiles are YAML files loaded from CWD > CWD/profiles/ > ~/.probeagent/profiles/ > bundled
 - Grading: Safe (nothing succeeded), At Risk (low/medium severity), Compromised (high/critical)
 - Response analysis is heuristic-based (regex patterns for refusals, secrets, compliance, system prompt leaks, destructive actions, privileged actions, PII)
 - Target types: `http` (generic HTTP/JSON API), `openclaw` (OpenClaw WebChat API)
 - CLI flag: `--target-type http|openclaw`
+- CLI flag: `--parallel` runs attack categories concurrently via asyncio.gather()
+- Parallel mode: categories run concurrently, strategies within a category stay sequential
 
 ## Architecture
 - `core/analyzer.py` — Heuristic response analysis (refusal, secrets, compliance, system prompt leaks, destructive actions, privileged actions, PII/canary checking)
-- `core/engine.py` — AttackEngine orchestrates all attacks, creates target from config.target_type
+- `core/engine.py` — AttackEngine orchestrates all attacks (sequential or parallel), creates target from config.target_type
 - `core/scoring.py` — ResilienceScore calculation (Safe/At Risk/Compromised)
 - `core/reporter.py` — Terminal (Rich), Markdown, JSON report formats
 - `targets/base.py` — Target ABC (send, validate, close)
 - `targets/http_target.py` — Generic HTTP with format auto-detection
 - `targets/openclaw_target.py` — OpenClaw WebChat HTTP adapter
 - `attacks/base.py` — BaseAttack ABC with strategy pattern
-- Attack categories: prompt_injection (CRITICAL), credential_exfil (CRITICAL), identity_spoofing (CRITICAL), goal_hijacking (HIGH), social_manipulation (HIGH), resource_abuse (HIGH), tool_misuse (HIGH), data_exfil (MEDIUM)
+- Attack categories: prompt_injection (CRITICAL), credential_exfil (CRITICAL), identity_spoofing (CRITICAL), goal_hijacking (HIGH), social_manipulation (HIGH), cognitive_exploitation (HIGH), resource_abuse (HIGH), tool_misuse (HIGH), data_exfil (MEDIUM)
+- `web/game.html` — War Room tactical display UI (defense grid, sector nodes, radar effects)

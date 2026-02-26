@@ -77,6 +77,7 @@ def attack(
         None, "--output-file", "-f", help="Write report to file."
     ),
     timeout: float = typer.Option(30.0, "--timeout", "-t", help="Request timeout in seconds."),
+    parallel: bool = typer.Option(False, "--parallel", help="Run attack categories in parallel."),
 ) -> None:
     """Run security attacks against a target AI agent."""
     load_env()
@@ -100,6 +101,7 @@ def attack(
         output_format=output_format,
         output_file=output_file,
         timeout=timeout,
+        parallel=parallel,
     )
 
     # Resolve target class
@@ -115,7 +117,8 @@ def attack(
         f"Profile:  {config.profile}\n"
         f"Attacks:  {', '.join(config.attacks)}\n"
         f"Turns:    {config.max_turns}\n"
-        f"Timeout:  {config.timeout}s"
+        f"Timeout:  {config.timeout}s\n"
+        f"Parallel: {'Yes' if config.parallel else 'No'}"
     )
     console.print(Panel(config_text, title="Attack Configuration", border_style="blue"))
 
@@ -221,7 +224,7 @@ def game(
     target_type: str = typer.Option("http", "--target-type", help="Target type: http, openclaw."),
     port: int = typer.Option(1337, "--port", help="Port for the game UI server."),
 ) -> None:
-    """Launch the retro arcade game UI in your browser."""
+    """Launch the War Room tactical display UI in your browser."""
     try:
         import uvicorn
     except ImportError:
@@ -247,7 +250,7 @@ def game(
     if params:
         url += "?" + "&".join(params)
 
-    console.print("\n[bold green]PROBE://AGENT[/bold green] — Retro Arcade Mode\n")
+    console.print("\n[bold green]PROBE://AGENT[/bold green] — Tactical Display Mode\n")
     console.print(f"  Game UI: [cyan]{url}[/cyan]\n")
 
     # Open browser after a short delay to let server start

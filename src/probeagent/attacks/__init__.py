@@ -61,6 +61,13 @@ ATTACK_REGISTRY: dict[str, dict] = {
         "module": "probeagent.attacks.resource_abuse",
         "class": "ResourceAbuseAttack",
     },
+    "cognitive_exploitation": {
+        "display_name": "Cognitive Exploitation",
+        "severity": Severity.HIGH,
+        "description": "Exploits reasoning and cognitive weaknesses to bypass agent safety controls.",
+        "module": "probeagent.attacks.cognitive_exploitation",
+        "class": "CognitiveExploitationAttack",
+    },
 }
 
 

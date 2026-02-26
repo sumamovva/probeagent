@@ -29,12 +29,12 @@ class TestSocialManipulationAttack:
         assert attack.display_name == "Social Manipulation"
 
     def test_strategy_count(self):
-        assert len(STRATEGIES) == 6
+        assert len(STRATEGIES) == 14
 
     @pytest.mark.asyncio
     async def test_all_strategies_run(self, attack, mock_target):
         results = await attack.execute(mock_target, max_turns=10)
-        assert len(results) == 6
+        assert len(results) == 14
 
     @pytest.mark.asyncio
     async def test_refused_response_fails(self, attack, mock_target):

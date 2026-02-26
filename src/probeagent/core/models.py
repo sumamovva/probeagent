@@ -118,4 +118,5 @@ class ProbeConfig:
     output_format: OutputFormat = OutputFormat.TERMINAL
     output_file: str | None = None
     timeout: float = 30.0
+    parallel: bool = False
     metadata: dict[str, Any] = field(default_factory=dict)
