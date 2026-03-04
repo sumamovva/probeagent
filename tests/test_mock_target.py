@@ -270,8 +270,10 @@ class TestDemoCommand:
         runner = CliRunner()
         result = runner.invoke(app, ["demo", "--help"])
         assert result.exit_code == 0
-        assert "--live" in result.output
-        assert "--game" in result.output
+        # Rich/typer may insert ANSI codes between "--" and the flag name,
+        # so match the flag name without the prefix.
+        assert "live" in result.output
+        assert "game" in result.output
 
     def test_demo_mock_runs(self):
         from typer.testing import CliRunner
