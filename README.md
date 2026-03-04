@@ -2,11 +2,9 @@
 
 **Offensive security testing for AI agents. They scan configs. We attack your agent.**
 
-<!-- TODO: Add demo GIF -->
-
 ## What is ProbeAgent?
 
-ProbeAgent is a CLI tool that performs automated red-teaming of AI agents. It launches realistic multi-turn attacks — prompt injection, credential exfiltration, goal hijacking, and more — against any HTTP-accessible agent.
+ProbeAgent is a CLI tool that performs automated red-teaming of AI agents. It launches realistic multi-turn attacks — prompt injection, credential exfiltration, indirect injection, social manipulation, and more — against any HTTP-accessible agent.
 
 Most AI security tools scan static configurations or check for known patterns. ProbeAgent actually *attacks* your running agent and tells you whether it's **Safe**, **At Risk**, or **Compromised**.
 
@@ -16,28 +14,46 @@ Most AI security tools scan static configurations or check for known patterns. P
 |---------|----------|------------|--------|----------------|
 | Offensive testing | - | - | Partial | **Yes** |
 | Multi-turn attacks | - | - | - | **Yes** |
+| Indirect injection testing | - | - | - | **Yes** |
+| PyRIT integration | - | - | - | **Yes** |
+| Evasion converters | - | - | - | **Yes** |
 | CLI-first | - | - | Yes | **Yes** |
 | Security grading | - | - | - | **Yes** |
-| HTTP target support | - | - | - | **Yes** |
+| HTTP + OpenClaw targets | - | - | - | **Yes** |
 | Rich terminal reports | - | - | - | **Yes** |
 
 ## Installation
 
-### Install ProbeAgent
-
 ```bash
-pip install probeagent
+pip install probeagent-ai
 ```
 
 Or install from source for development:
 
 ```bash
-git clone https://github.com/probeagent/probeagent.git
+git clone https://github.com/sumamovva/probeagent.git
 cd probeagent
 pip install -e ".[dev]"
 ```
 
+For PyRIT integration (evasion converters + dynamic red teaming):
+
+```bash
+pip install 'probeagent-ai[pyrit]'
+```
+
 ## Quickstart
+
+### Instant demo (no setup required)
+
+```bash
+pip install probeagent-ai
+probeagent demo
+```
+
+This attacks a built-in mock target — a vulnerable agent and a hardened one — and shows a side-by-side comparison. No API keys, no server, no config.
+
+### Scan your own agent
 
 ```bash
 # Validate your target is reachable
@@ -48,18 +64,53 @@ probeagent attack https://your-agent.example.com/api --profile quick
 
 # Full scan with parallel execution
 probeagent attack https://your-agent.example.com/api --profile standard --parallel
-
-# Launch the tactical display UI
-probeagent game https://your-agent.example.com/api --profile standard
-
-# See all available attacks
-probeagent list-attacks
-
-# Create a config file
-probeagent init
 ```
 
+## Demo
+
+### Instant demo
+
+Run a complete security assessment in seconds with zero setup:
+
+```bash
+probeagent demo
+```
+
+Add the War Room tactical display for a visual experience:
+
+```bash
+probeagent demo --game
+```
+
+### Live demo (real API)
+
+For demos against a real Claude-powered email agent with built-in vulnerabilities:
+
+```bash
+export ANTHROPIC_API_KEY=sk-ant-...
+pip install 'probeagent-ai[demo]'
+probeagent demo --live
+```
+
+The live demo starts a local email agent server with three endpoints at increasing security hardness, then attacks them. See `tools/demo_email_agent.py` for details.
+
 ## Commands
+
+### `probeagent demo`
+
+Run a full demo — attack a vulnerable + hardened target and compare results.
+
+```bash
+probeagent demo                    # Instant, uses mock target
+probeagent demo --game             # With War Room tactical display
+probeagent demo --live             # Real API (requires ANTHROPIC_API_KEY)
+probeagent demo --profile standard # Use a different attack profile
+```
+
+Options:
+- `--live` — Use real API (starts demo email agent server)
+- `--game` — Launch War Room UI after attacks
+- `--profile`, `-p` — Attack profile: `quick`, `standard`, or `thorough` (default: `quick`)
 
 ### `probeagent attack <url>`
 
@@ -68,14 +119,18 @@ Run security attacks against a target AI agent.
 ```bash
 probeagent attack https://agent.example.com/api --profile quick
 probeagent attack https://agent.example.com/api --profile standard --output json -f report.json
+probeagent attack https://agent.example.com/api -p standard --converters stealth --parallel
 ```
 
 Options:
 - `--profile`, `-p` — Attack profile: `quick`, `standard`, or `thorough` (default: `quick`)
+- `--target-type` — Target type: `http` or `openclaw` (default: `http`)
 - `--output`, `-o` — Output format: `terminal`, `markdown`, `json` (default: `terminal`)
 - `--output-file`, `-f` — Write report to file
 - `--timeout`, `-t` — Request timeout in seconds (default: 30)
 - `--parallel` — Run attack categories in parallel for faster scans
+- `--converters` — Apply evasion converters: `basic`, `advanced`, `stealth`, or comma-separated names (requires PyRIT)
+- `--redteam` — Enable dynamic LLM-driven attacks via PyRIT RedTeamOrchestrator (requires PyRIT)
 
 ### `probeagent validate <url>`
 
@@ -95,13 +150,15 @@ Launch the War Room tactical display UI in your browser for interactive testing.
 
 ## Attack Categories
 
-9 attack categories with 56 strategies total:
+11 attack categories with 69 strategies total:
 
 | Category | Severity | Strategies | Technique |
 |----------|----------|------------|-----------|
 | Prompt Injection | CRITICAL | 6 | Override system instructions |
 | Credential Exfiltration | CRITICAL | 8 | Extract API keys and secrets |
 | Identity Spoofing | CRITICAL | 7 | Impersonate trusted entities |
+| Indirect Injection | CRITICAL | 7 | Inject instructions via agent-processed content (emails, docs) |
+| Config Manipulation | CRITICAL | 6 | Manipulate agent configuration, integrations, and permissions |
 | Goal Hijacking | HIGH | 5 | Redirect agent behavior |
 | Social Manipulation | HIGH | 14 | Psychological pressure (Cialdini, FOG, gradual escalation) |
 | Cognitive Exploitation | HIGH | 6 | Exploit reasoning weaknesses (Socratic traps, frame control) |
@@ -111,11 +168,31 @@ Launch the War Room tactical display UI in your browser for interactive testing.
 
 ## Attack Profiles
 
-| Profile | Attacks | Max Turns | Use Case |
-|---------|---------|-----------|----------|
-| `quick` | 4 critical | 1 | CI/CD gates, quick checks |
-| `standard` | All 9 | 3 | Regular security assessments |
-| `thorough` | All 9 | 10 | Pre-release deep scans |
+| Profile | Categories | Max Turns | Use Case |
+|---------|------------|-----------|----------|
+| `quick` | 5 critical | 1 | CI/CD gates, quick checks |
+| `standard` | All 11 | 3 | Regular security assessments |
+| `thorough` | All 11 | 10 | Pre-release deep scans |
+
+## PyRIT Integration
+
+ProbeAgent optionally integrates with [Microsoft PyRIT](https://github.com/Azure/PyRIT) for advanced capabilities:
+
+- **Evasion Converters** (`--converters`): Transform attack payloads with Base64, ROT13, Unicode substitution, leetspeak, and more to test resilience against obfuscated attacks
+- **Dynamic Red Teaming** (`--redteam`): Use an LLM-driven orchestrator to generate novel attack strategies in real time
+
+```bash
+# Apply stealth evasion converters
+probeagent attack https://agent.example.com/api -p standard --converters stealth
+
+# Dynamic red teaming
+probeagent attack https://agent.example.com/api -p standard --redteam
+
+# Combine both
+probeagent attack https://agent.example.com/api -p standard --converters advanced --redteam
+```
+
+Install with: `pip install 'probeagent-ai[pyrit]'`
 
 ## Responsible Use
 
@@ -127,6 +204,10 @@ ProbeAgent is designed for **authorized security testing only**. Before using Pr
 - Report vulnerabilities through proper disclosure channels
 
 Unauthorized use of this tool against systems you don't own or have permission to test may violate laws and regulations.
+
+## Attribution
+
+ProbeAgent's indirect injection and config manipulation attacks are inspired by research from [Zenity Labs](https://labs.zenity.io). PyRIT integration uses components from [Microsoft PyRIT](https://github.com/Azure/PyRIT) (MIT License). See [ATTRIBUTION.md](ATTRIBUTION.md) for full credits.
 
 ## Development
 
@@ -144,11 +225,15 @@ ruff check src/ tests/
 ruff format src/ tests/
 ```
 
+See [CONTRIBUTING.md](CONTRIBUTING.md) for full development guidelines.
+
 ## Roadmap
 
-- **Phase 1**: CLI, HTTP target, scoring, reporting
-- **Phase 2**: 9 attack categories with 56 multi-turn strategies
-- **Phase 3**: OpenClaw + MCP target adapters, parallel execution, War Room UI
+- [x] **Phase 1**: CLI, HTTP target, scoring, reporting
+- [x] **Phase 2**: 9 attack categories with 56 multi-turn strategies
+- [x] **Phase 3**: OpenClaw target adapter, parallel execution, War Room UI
+- [x] **Phase 4**: Zenity-inspired attacks (indirect injection, config manipulation), PyRIT integration
+- [ ] **Phase 5**: MCP target adapter, CI/CD integration, SaaS dashboard
 
 ## License
 

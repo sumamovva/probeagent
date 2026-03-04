@@ -35,6 +35,7 @@ class TestHelp:
         assert "validate" in result.output
         assert "list-attacks" in result.output
         assert "init" in result.output
+        assert "demo" in result.output
 
 
 class TestListAttacks:

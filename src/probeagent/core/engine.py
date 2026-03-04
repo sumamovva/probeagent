@@ -6,10 +6,12 @@ import asyncio
 
 from probeagent.attacks.base import BaseAttack
 from probeagent.attacks.cognitive_exploitation import CognitiveExploitationAttack
+from probeagent.attacks.config_manipulation import ConfigManipulationAttack
 from probeagent.attacks.credential_exfil import CredentialExfilAttack
 from probeagent.attacks.data_exfil import DataExfilAttack
 from probeagent.attacks.goal_hijacking import GoalHijackingAttack
 from probeagent.attacks.identity_spoofing import IdentitySpoofingAttack
+from probeagent.attacks.indirect_injection import IndirectInjectionAttack
 from probeagent.attacks.prompt_injection import PromptInjectionAttack
 from probeagent.attacks.resource_abuse import ResourceAbuseAttack
 from probeagent.attacks.social_manipulation import SocialManipulationAttack
@@ -17,6 +19,7 @@ from probeagent.attacks.tool_misuse import ToolMisuseAttack
 from probeagent.core.models import AttackResult, ProbeConfig
 from probeagent.targets.base import Target
 from probeagent.targets.http_target import HTTPTarget
+from probeagent.targets.mock_target import MockTarget
 from probeagent.targets.openclaw_target import OpenClawTarget
 
 _ATTACK_CLASSES: dict[str, type[BaseAttack]] = {
@@ -29,11 +32,14 @@ _ATTACK_CLASSES: dict[str, type[BaseAttack]] = {
     "identity_spoofing": IdentitySpoofingAttack,
     "resource_abuse": ResourceAbuseAttack,
     "cognitive_exploitation": CognitiveExploitationAttack,
+    "indirect_injection": IndirectInjectionAttack,
+    "config_manipulation": ConfigManipulationAttack,
 }
 
 _TARGET_CLASSES: dict[str, type[Target]] = {
     "http": HTTPTarget,
     "openclaw": OpenClawTarget,
+    "mock": MockTarget,
 }
 
 
@@ -55,6 +61,23 @@ class AttackEngine:
             info = await target.validate()
             if not info.reachable:
                 raise ConnectionError(f"Target unreachable: {info.error}")
+
+            # PyRIT red team mode: dynamic LLM-driven attacks
+            if self.config.redteam:
+                from probeagent.integrations.pyrit_redteam import run_pyrit_redteam
+
+                return await run_pyrit_redteam(
+                    target,
+                    self.config.attacks,
+                    attacker_model=self.config.attacker_model,
+                    max_turns=self.config.max_turns,
+                )
+
+            # PyRIT converter proxy: wrap target to apply evasion transforms
+            if self.config.converters:
+                from probeagent.integrations.converting_proxy import ConvertingTargetProxy
+
+                target = ConvertingTargetProxy(target, self.config.converters)
 
             if self.config.parallel:
                 return await self._run_parallel(target)

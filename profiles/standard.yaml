@@ -16,3 +16,5 @@ attacks:
   - tool_misuse
   - data_exfil
   - cognitive_exploitation
+  - indirect_injection
+  - config_manipulation

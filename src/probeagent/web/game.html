@@ -3,11 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>PROBE://AGENT — Threat Assessment Console</title>
-<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=VT323&display=swap" rel="stylesheet">
+<title>PROBE://AGENT — Security Arcade</title>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
 <style>
 /* ═══════════════════════════════════════════════════════════════
-   PROBE://AGENT — War Room Tactical Display
+   PROBE://AGENT — Q*bert Security Arcade
    ═══════════════════════════════════════════════════════════════ */
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -20,111 +20,143 @@
   --amber: #ffcc00;
   --muted: #1a2233;
   --dim: #4a5568;
-  --grid: rgba(0,170,255,0.06);
-  --font-main: 'Share Tech Mono', monospace;
+  --font-arcade: 'Press Start 2P', monospace;
   --font-terminal: 'VT323', monospace;
 }
 
 html, body {
   width: 100%; height: 100%;
-  background: var(--bg);
+  background: #000;
   color: var(--green);
-  font-family: var(--font-main);
+  font-family: var(--font-arcade);
   overflow: hidden;
   cursor: default;
 }
 
-/* Tactical display frame */
+/* ─── Game container ─── */
 #display {
   position: fixed; inset: 0;
   display: flex; align-items: center; justify-content: center;
+  background: #000;
 }
 
 #viewport {
   position: relative;
   width: 96vw; height: 94vh;
   max-width: 1400px;
-  border: 1px solid rgba(0,170,255,0.2);
+  border: 2px solid rgba(0,170,255,0.3);
   overflow: hidden;
   background: var(--bg);
 }
 
-/* Grid overlay */
-#viewport::before {
-  content: '';
-  position: absolute; inset: 0;
-  background:
-    linear-gradient(var(--grid) 1px, transparent 1px),
-    linear-gradient(90deg, var(--grid) 1px, transparent 1px);
-  background-size: 40px 40px;
-  pointer-events: none;
-  z-index: 1;
-  animation: gridPulse 8s ease-in-out infinite;
-}
-
-@keyframes gridPulse {
-  0%, 100% { opacity: 0.5; }
-  50% { opacity: 1; }
-}
-
-/* Canvas for effects */
-#fx-canvas {
+/* ─── Main game canvas (persistent, behind screens) ─── */
+#game-canvas {
   position: absolute; inset: 0;
   width: 100%; height: 100%;
-  pointer-events: none;
-  z-index: 500;
+  z-index: 1;
 }
 
-/* ─── SCREEN VIEWS ─── */
+/* ─── CRT scanlines ─── */
+.crt-scanlines {
+  position: absolute; inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(0,0,0,0.04) 0px,
+    rgba(0,0,0,0.04) 1px,
+    transparent 1px,
+    transparent 3px
+  );
+  pointer-events: none;
+  z-index: 950;
+}
+
+/* ─── CRT vignette ─── */
+.crt-vignette {
+  position: absolute; inset: 0;
+  background: radial-gradient(ellipse at center, transparent 55%, rgba(0,0,0,0.5) 100%);
+  pointer-events: none;
+  z-index: 940;
+}
+
+/* ─── Screen flash ─── */
+.screen-flash {
+  position: absolute; inset: 0;
+  background: white;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 960;
+  transition: opacity 0.05s;
+}
+.screen-flash.flash { opacity: 0.15; }
+
+/* ─── Red pulse overlay ─── */
+@keyframes redPulse {
+  0%, 100% { box-shadow: inset 0 0 40px rgba(255,51,68,0.1); }
+  50% { box-shadow: inset 0 0 80px rgba(255,51,68,0.25); }
+}
+.red-pulse { animation: redPulse 1.5s ease-in-out infinite; }
+
+/* ─── Screen views ─── */
 .screen-view {
   position: absolute; inset: 0;
   display: none;
   flex-direction: column;
-  padding: 24px;
   z-index: 10;
 }
-
 .screen-view.active { display: flex; }
 
-/* ─── TITLE SCREEN ─── */
+/* ═══ TITLE SCREEN ═══ */
 #title-screen {
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: 4px;
+  background: var(--bg);
+  padding: 20px;
+}
+
+#title-preview {
+  margin-bottom: 12px;
+  image-rendering: pixelated;
 }
 
 #title-logo {
-  font-size: clamp(20px, 4vw, 48px);
-  letter-spacing: 6px;
+  font-family: var(--font-arcade);
+  font-size: clamp(16px, 3.5vw, 36px);
+  letter-spacing: 4px;
   color: var(--cyan);
-  text-shadow: 0 0 20px rgba(0,170,255,0.4);
-  margin-bottom: 4px;
+  text-shadow: 0 0 20px rgba(0,170,255,0.5), 0 2px 0 #005580;
+  margin-bottom: 2px;
 }
 
 #title-subtitle {
-  font-size: clamp(10px, 1.4vw, 16px);
-  letter-spacing: 8px;
-  color: var(--dim);
-  margin-bottom: 32px;
+  font-family: var(--font-arcade);
+  font-size: clamp(8px, 1.2vw, 12px);
+  letter-spacing: 6px;
+  color: var(--amber);
+  animation: blink 1s step-end infinite;
+  margin-bottom: 28px;
 }
+
+@keyframes blink { 50% { opacity: 0; } }
 
 .title-form {
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  width: min(500px, 85vw);
+  gap: 14px;
+  width: min(520px, 88vw);
 }
 
 .form-row {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
 }
 
 .form-row label {
-  width: 140px;
-  font-size: 11px;
-  letter-spacing: 3px;
+  width: 130px;
+  font-family: var(--font-arcade);
+  font-size: 7px;
+  letter-spacing: 2px;
   color: var(--dim);
   text-align: right;
   flex-shrink: 0;
@@ -133,21 +165,21 @@ html, body {
 .form-row input {
   flex: 1;
   background: rgba(0,170,255,0.05);
-  border: 1px solid rgba(0,170,255,0.2);
+  border: 2px solid rgba(0,170,255,0.25);
   color: var(--cyan);
-  font-family: var(--font-main);
-  font-size: 13px;
-  padding: 10px 14px;
+  font-family: var(--font-arcade);
+  font-size: 10px;
+  padding: 10px 12px;
   outline: none;
   transition: border-color 0.2s;
 }
 
 .form-row input:focus {
   border-color: var(--cyan);
-  box-shadow: 0 0 10px rgba(0,170,255,0.15);
+  box-shadow: 0 0 12px rgba(0,170,255,0.2);
 }
 
-.form-row input::placeholder { color: var(--dim); }
+.form-row input::placeholder { color: var(--dim); font-size: 8px; }
 
 .selector-group {
   display: flex;
@@ -158,15 +190,15 @@ html, body {
 .selector-btn {
   flex: 1;
   background: rgba(0,170,255,0.04);
-  border: 1px solid rgba(0,170,255,0.15);
+  border: 2px solid rgba(0,170,255,0.15);
   color: var(--dim);
-  font-family: var(--font-main);
-  font-size: 11px;
-  padding: 8px 6px;
+  font-family: var(--font-arcade);
+  font-size: 12px;
+  padding: 8px 4px 6px;
   cursor: pointer;
   transition: all 0.15s;
-  line-height: 1.4;
   text-align: center;
+  line-height: 1.6;
 }
 
 .selector-btn:hover {
@@ -177,67 +209,69 @@ html, body {
 .selector-btn.selected {
   border-color: var(--cyan);
   color: var(--cyan);
-  background: rgba(0,170,255,0.1);
-  box-shadow: 0 0 8px rgba(0,170,255,0.1);
+  background: rgba(0,170,255,0.12);
+  box-shadow: 0 0 10px rgba(0,170,255,0.15);
+}
+
+.btn-sub {
+  font-size: 6px;
+  letter-spacing: 1px;
+  display: block;
+  margin-top: 2px;
 }
 
 #start-btn {
-  margin-top: 24px;
+  margin-top: 20px;
   background: transparent;
-  border: 1px solid var(--green);
+  border: 2px solid var(--green);
   color: var(--green);
-  font-family: var(--font-main);
-  font-size: 14px;
+  font-family: var(--font-arcade);
+  font-size: 12px;
   letter-spacing: 4px;
-  padding: 14px 40px;
+  padding: 14px 36px;
   cursor: pointer;
   transition: all 0.2s;
   position: relative;
   overflow: hidden;
+  animation: startPulse 2s ease-in-out infinite;
+}
+
+@keyframes startPulse {
+  0%, 100% { box-shadow: 0 0 10px rgba(0,255,136,0.1); }
+  50% { box-shadow: 0 0 25px rgba(0,255,136,0.3); }
 }
 
 #start-btn:hover {
-  background: rgba(0,255,136,0.08);
-  box-shadow: 0 0 20px rgba(0,255,136,0.15);
-}
-
-#start-btn::before {
-  content: '';
-  position: absolute;
-  top: 0; left: -100%;
-  width: 100%; height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(0,255,136,0.1), transparent);
-  animation: sweepBtn 3s linear infinite;
-}
-
-@keyframes sweepBtn {
-  0% { left: -100%; }
-  100% { left: 100%; }
+  background: rgba(0,255,136,0.1);
+  box-shadow: 0 0 30px rgba(0,255,136,0.25);
 }
 
 .status-line {
-  font-size: 11px;
+  font-family: var(--font-arcade);
+  font-size: 7px;
   color: var(--dim);
-  margin-top: 8px;
+  margin-top: 12px;
   letter-spacing: 2px;
 }
 
-.blink { animation: blink 1s step-end infinite; }
-@keyframes blink { 50% { opacity: 0; } }
-
-/* ─── BRIEFING SCREEN ─── */
+/* ═══ BRIEFING SCREEN ═══ */
 #briefing-screen {
   align-items: center;
   justify-content: center;
   gap: 6px;
+  background: transparent;
+  pointer-events: none;
 }
 
 .briefing-line {
-  font-size: 13px;
+  font-family: var(--font-arcade);
+  font-size: 10px;
   letter-spacing: 2px;
   opacity: 0;
-  transform: translateY(4px);
+  transform: translateY(6px);
   transition: all 0.4s;
+  text-shadow: 0 0 8px currentColor;
+  z-index: 20;
 }
 
 .briefing-line.visible {
@@ -245,221 +279,68 @@ html, body {
   transform: translateY(0);
 }
 
-.briefing-line.dim { color: var(--dim); font-size: 11px; }
+.briefing-line.dim { color: var(--dim); font-size: 8px; }
 .briefing-line.cyan { color: var(--cyan); }
 .briefing-line.amber { color: var(--amber); }
+.briefing-line.big {
+  font-size: 16px;
+  letter-spacing: 4px;
+  margin-top: 12px;
+}
 
 .attack-roster {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 8px;
   justify-content: center;
-  margin: 12px 0;
-  max-width: 600px;
+  margin: 14px 0;
+  max-width: 650px;
+  z-index: 20;
 }
 
 .roster-item {
-  font-size: 10px;
+  font-family: var(--font-arcade);
+  font-size: 7px;
   letter-spacing: 1px;
-  padding: 6px 12px;
+  padding: 6px 10px;
   border: 1px solid;
   opacity: 0;
-  transform: scale(0.8);
+  transform: translateX(-20px);
   transition: all 0.3s;
 }
 
 .roster-item.visible {
   opacity: 1;
-  transform: scale(1);
+  transform: translateX(0);
 }
 
-/* ─── BATTLE SCREEN (Defense Grid) ─── */
-#battle-screen { padding: 0; }
-
-.battle-top {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 8px 16px;
-  border-bottom: 1px solid var(--muted);
-  font-size: 11px;
-  letter-spacing: 2px;
+/* ═══ BATTLE SCREEN ═══ */
+#battle-screen {
+  padding: 0;
+  background: transparent;
+  flex-direction: row;
 }
 
-.battle-progress { color: var(--dim); }
-.battle-category { color: var(--cyan); text-shadow: 0 0 6px rgba(0,170,255,0.4); }
-.battle-time { color: var(--dim); }
-
-.battle-main {
-  flex: 1;
-  display: flex;
-  overflow: hidden;
-}
-
-/* Defense grid */
-.defense-grid {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  position: relative;
-  padding: 16px;
-  overflow: hidden;
-}
-
-.sector-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
-  width: min(420px, 50vw);
-  margin-bottom: 20px;
-}
-
-.sector-node {
-  aspect-ratio: 1.4;
-  border: 1px solid rgba(0,255,136,0.3);
-  background: rgba(0,255,136,0.03);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  padding: 6px;
-  transition: all 0.4s;
-  position: relative;
-  overflow: hidden;
-}
-
-.sector-node::before {
-  content: '';
-  position: absolute; inset: 0;
-  background: linear-gradient(180deg, rgba(0,255,136,0.05) 0%, transparent 100%);
-  transition: all 0.4s;
-}
-
-.sector-node .sector-icon { font-size: 18px; z-index: 1; }
-.sector-node .sector-label {
-  font-size: 8px;
-  letter-spacing: 1px;
-  color: var(--green);
-  z-index: 1;
-  text-align: center;
-}
-
-.sector-node .sector-status {
-  font-size: 7px;
-  letter-spacing: 1px;
-  color: var(--dim);
-  z-index: 1;
-}
-
-.sector-node .sector-bar {
-  width: 80%;
-  height: 3px;
-  background: rgba(0,255,136,0.15);
-  z-index: 1;
-  overflow: hidden;
-}
-
-.sector-node .sector-bar-fill {
-  height: 100%;
-  width: 0%;
-  background: var(--green);
-  transition: width 0.3s;
-}
-
-.sector-node.active {
-  border-color: var(--cyan);
-  background: rgba(0,170,255,0.06);
-  box-shadow: 0 0 12px rgba(0,170,255,0.1);
-}
-
-.sector-node.active::before {
-  background: linear-gradient(180deg, rgba(0,170,255,0.08) 0%, transparent 100%);
-}
-
-.sector-node.active .sector-label { color: var(--cyan); }
-
-.sector-node.breached {
-  border-color: var(--red);
-  background: rgba(255,51,68,0.06);
-}
-
-.sector-node.breached::before {
-  background: linear-gradient(180deg, rgba(255,51,68,0.08) 0%, transparent 100%);
-}
-
-.sector-node.breached .sector-label { color: var(--red); }
-.sector-node.breached .sector-bar-fill { background: var(--red); }
-
-.sector-node.secure {
-  border-color: var(--green);
-}
-
-.sector-node.secure .sector-status { color: var(--green); }
-
-/* Outcome callout */
-.outcome-text {
-  font-size: 18px;
-  letter-spacing: 4px;
-  font-weight: bold;
-  opacity: 0;
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%) scale(0.5);
-  transition: all 0.3s;
-  z-index: 100;
-  pointer-events: none;
-}
-
-.outcome-text.show {
-  opacity: 1;
-  transform: translate(-50%, -50%) scale(1);
-}
-
-.outcome-text.succeeded {
-  color: var(--red);
-  text-shadow: 0 0 20px var(--red), 0 0 40px rgba(255,51,68,0.4);
-}
-
-.outcome-text.failed {
-  color: var(--green);
-  text-shadow: 0 0 12px var(--green);
-}
-
-.outcome-text.error {
-  color: var(--amber);
-  text-shadow: 0 0 12px var(--amber);
-}
-
-/* Current attack info */
-.current-attack {
-  font-size: 10px;
-  letter-spacing: 2px;
-  color: var(--dim);
-  text-align: center;
-  min-height: 20px;
-}
-
-.current-attack .attack-name { color: var(--cyan); }
-
-/* Terminal log panel */
 .terminal-panel {
-  width: 340px;
-  border-left: 1px solid var(--muted);
+  position: absolute;
+  right: 0; top: 0; bottom: 0;
+  width: 30%;
+  min-width: 240px;
+  max-width: 380px;
+  border-left: 2px solid var(--muted);
   display: flex;
   flex-direction: column;
   font-family: var(--font-terminal);
-  font-size: 14px;
+  font-size: 15px;
+  background: var(--bg);
+  z-index: 15;
 }
 
 .terminal-header {
   padding: 8px 10px;
   border-bottom: 1px solid var(--muted);
-  font-family: var(--font-main);
-  font-size: 10px;
+  font-family: var(--font-arcade);
+  font-size: 7px;
   color: var(--dim);
   letter-spacing: 3px;
 }
@@ -468,14 +349,14 @@ html, body {
   flex: 1;
   overflow-y: auto;
   padding: 8px 10px;
-  line-height: 1.4;
+  line-height: 1.5;
 }
 
-.terminal-log::-webkit-scrollbar { width: 3px; }
+.terminal-log::-webkit-scrollbar { width: 4px; }
 .terminal-log::-webkit-scrollbar-track { background: var(--bg); }
 .terminal-log::-webkit-scrollbar-thumb { background: var(--muted); }
 
-.log-entry { margin-bottom: 4px; word-break: break-all; }
+.log-entry { margin-bottom: 3px; word-break: break-all; }
 .log-prompt { color: var(--cyan); }
 .log-response { color: var(--dim); }
 .log-result-success { color: var(--red); }
@@ -483,26 +364,30 @@ html, body {
 .log-result-error { color: var(--amber); }
 .log-category {
   color: var(--cyan);
-  font-family: var(--font-main);
-  font-size: 10px;
+  font-family: var(--font-arcade);
+  font-size: 7px;
   letter-spacing: 1px;
-  margin-top: 6px;
+  margin-top: 8px;
+  padding-top: 4px;
+  border-top: 1px solid var(--muted);
   display: block;
 }
 
-/* ─── GRADE REVEAL SCREEN ─── */
+/* ═══ GRADE REVEAL ═══ */
 #reveal-screen {
   align-items: center;
   justify-content: center;
-  gap: 16px;
+  gap: 14px;
+  background: rgba(10,14,20,0.75);
 }
 
 .grade-text {
-  font-size: clamp(20px, 4vw, 48px);
-  letter-spacing: 6px;
+  font-family: var(--font-arcade);
+  font-size: clamp(14px, 3vw, 32px);
+  letter-spacing: 4px;
   opacity: 0;
   transform: scale(2);
-  transition: all 0.5s cubic-bezier(0.17, 0.89, 0.32, 1.28);
+  transition: all 0.4s cubic-bezier(0.17, 0.89, 0.32, 1.28);
 }
 
 .grade-text.slam {
@@ -510,91 +395,83 @@ html, body {
   transform: scale(1);
 }
 
-.grade-safe {
-  color: var(--green);
-  text-shadow: 0 0 20px var(--green), 0 0 60px rgba(0,255,136,0.3);
-}
-
-.grade-atrisk {
-  color: var(--amber);
-  text-shadow: 0 0 20px var(--amber), 0 0 60px rgba(255,204,0,0.3);
-}
-
-.grade-compromised {
-  color: var(--red);
-  text-shadow: 0 0 20px var(--red), 0 0 60px rgba(255,51,68,0.3);
-}
+.grade-safe { color: var(--green); text-shadow: 0 0 20px var(--green), 0 0 60px rgba(0,255,136,0.3); }
+.grade-atrisk { color: var(--amber); text-shadow: 0 0 20px var(--amber), 0 0 60px rgba(255,204,0,0.3); }
+.grade-compromised { color: var(--red); text-shadow: 0 0 20px var(--red), 0 0 60px rgba(255,51,68,0.3); }
 
 .grade-subtitle {
-  font-size: clamp(10px, 1.5vw, 16px);
-  letter-spacing: 4px;
+  font-family: var(--font-arcade);
+  font-size: clamp(7px, 1.1vw, 10px);
+  letter-spacing: 3px;
   color: var(--dim);
   opacity: 0;
   transition: opacity 0.5s;
 }
-
 .grade-subtitle.visible { opacity: 1; }
 
 .grade-stats {
-  font-size: 12px;
+  font-family: var(--font-arcade);
+  font-size: 8px;
   color: var(--dim);
   opacity: 0;
   transition: opacity 0.5s;
   text-align: center;
-  line-height: 2;
+  line-height: 2.2;
+  letter-spacing: 1px;
 }
-
 .grade-stats.visible { opacity: 1; }
 
-.grade-icon {
-  font-size: clamp(36px, 8vw, 72px);
-  opacity: 0;
-  transition: opacity 0.5s;
-}
-
-.grade-icon.visible { opacity: 1; }
-
 #continue-btn {
-  margin-top: 20px;
+  margin-top: 16px;
   background: transparent;
-  border: 1px solid var(--dim);
+  border: 2px solid var(--dim);
   color: var(--dim);
-  font-family: var(--font-main);
-  font-size: 11px;
+  font-family: var(--font-arcade);
+  font-size: 8px;
   letter-spacing: 2px;
-  padding: 10px 24px;
+  padding: 10px 20px;
   cursor: pointer;
   opacity: 0;
   transition: all 0.3s;
 }
-
 #continue-btn.visible { opacity: 1; }
+#continue-btn:hover { border-color: var(--cyan); color: var(--cyan); }
 
-#continue-btn:hover {
-  border-color: var(--cyan);
-  color: var(--cyan);
-}
-
-/* ─── RESULTS SCREEN ─── */
+/* ═══ RESULTS SCREEN (HIGH SCORES) ═══ */
 #results-screen {
   padding: 16px;
   overflow-y: auto;
+  background: var(--bg);
 }
 
 .results-header {
-  font-size: 16px;
+  font-family: var(--font-arcade);
+  font-size: 14px;
   letter-spacing: 4px;
+  text-align: center;
+  margin-bottom: 6px;
+  color: var(--amber);
+}
+
+.results-subheader {
+  font-family: var(--font-arcade);
+  font-size: 8px;
+  letter-spacing: 2px;
   text-align: center;
   margin-bottom: 16px;
   padding-bottom: 12px;
-  border-bottom: 1px solid var(--muted);
+  border-bottom: 2px solid var(--muted);
+  color: var(--dim);
 }
 
 .results-list {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 2px;
   margin-bottom: 16px;
+  max-width: 900px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .result-row {
@@ -603,28 +480,35 @@ html, body {
   gap: 8px;
   padding: 6px 10px;
   border: 1px solid var(--muted);
-  font-size: 11px;
+  font-family: var(--font-arcade);
+  font-size: 7px;
   cursor: pointer;
   transition: all 0.1s;
 }
 
 .result-row:hover {
   border-color: rgba(0,170,255,0.3);
-  background: rgba(0,170,255,0.03);
+  background: rgba(0,170,255,0.04);
 }
 
-.result-icon { font-size: 14px; width: 24px; text-align: center; }
-.result-name { flex: 1; color: var(--dim); }
-.result-strategy { color: var(--dim); flex: 1; font-size: 10px; }
-.result-outcome { width: 80px; text-align: center; letter-spacing: 1px; }
+.result-rank {
+  width: 28px;
+  text-align: center;
+  color: var(--amber);
+  font-size: 8px;
+}
+
+.result-name { flex: 1; color: var(--dim); letter-spacing: 1px; }
+.result-strategy { color: var(--dim); flex: 1; font-size: 6px; }
+.result-outcome { width: 70px; text-align: center; letter-spacing: 1px; }
 .result-outcome.succeeded { color: var(--red); }
 .result-outcome.failed { color: var(--green); }
 .result-outcome.error { color: var(--amber); }
 
 .result-severity {
-  width: 60px;
+  width: 55px;
   text-align: center;
-  font-size: 9px;
+  font-size: 6px;
   padding: 2px 4px;
   border: 1px solid;
   letter-spacing: 1px;
@@ -642,14 +526,16 @@ html, body {
   border-top: none;
   font-family: var(--font-terminal);
   font-size: 14px;
-  line-height: 1.4;
-  max-height: 200px;
+  line-height: 1.5;
+  max-height: 220px;
   overflow-y: auto;
-  background: rgba(0,0,0,0.4);
+  background: rgba(0,0,0,0.5);
+  max-width: 900px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .result-detail.open { display: block; }
-
 .result-detail .turn-attacker { color: var(--cyan); }
 .result-detail .turn-target { color: var(--dim); }
 .result-detail .rationale { color: var(--amber); margin-top: 6px; font-style: italic; }
@@ -663,12 +549,12 @@ html, body {
 
 .action-btn {
   background: transparent;
-  border: 1px solid var(--muted);
+  border: 2px solid var(--muted);
   color: var(--dim);
-  font-family: var(--font-main);
-  font-size: 10px;
+  font-family: var(--font-arcade);
+  font-size: 7px;
   letter-spacing: 1px;
-  padding: 8px 16px;
+  padding: 10px 16px;
   cursor: pointer;
   transition: all 0.15s;
 }
@@ -680,57 +566,40 @@ html, body {
 
 .results-footer {
   text-align: center;
-  font-size: 10px;
+  font-family: var(--font-arcade);
+  font-size: 6px;
   color: rgba(0,170,255,0.2);
   padding-top: 12px;
   border-top: 1px solid var(--muted);
   letter-spacing: 2px;
+  max-width: 900px;
+  margin: 0 auto;
 }
 
-/* ─── Animations ─── */
+/* ═══ Animations ═══ */
 @keyframes shake-sm {
   0%, 100% { transform: translate(0); }
-  25% { transform: translate(-2px, 1px); }
-  50% { transform: translate(2px, -1px); }
-  75% { transform: translate(-1px, 2px); }
+  25% { transform: translate(-3px, 1px); }
+  50% { transform: translate(3px, -2px); }
+  75% { transform: translate(-2px, 2px); }
 }
 
 @keyframes shake-lg {
   0%, 100% { transform: translate(0); }
-  10% { transform: translate(-4px, 2px); }
-  20% { transform: translate(4px, -3px); }
-  30% { transform: translate(-3px, 4px); }
-  40% { transform: translate(3px, -2px); }
-  50% { transform: translate(-2px, 3px); }
+  10% { transform: translate(-5px, 3px); }
+  20% { transform: translate(5px, -4px); }
+  30% { transform: translate(-4px, 5px); }
+  40% { transform: translate(4px, -3px); }
+  50% { transform: translate(-3px, 4px); }
 }
 
 .shake-sm { animation: shake-sm 0.2s ease-in-out; }
 .shake-lg { animation: shake-lg 0.4s ease-in-out; }
 
-/* Screen flash */
-.screen-flash {
-  position: absolute; inset: 0;
-  background: white;
-  opacity: 0;
-  pointer-events: none;
-  z-index: 900;
-  transition: opacity 0.05s;
-}
-
-.screen-flash.flash { opacity: 0.1; }
-
-/* Red pulse for compromised */
-@keyframes redPulse {
-  0%, 100% { box-shadow: inset 0 0 30px rgba(255,51,68,0.1); }
-  50% { box-shadow: inset 0 0 60px rgba(255,51,68,0.2); }
-}
-
-.red-pulse { animation: redPulse 2s ease-in-out infinite; }
-
-/* Radar sweep for briefing/results */
-@keyframes radarSweep {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+/* Level complete flash */
+@keyframes levelFlash {
+  0% { opacity: 1; transform: scale(1); }
+  100% { opacity: 0; transform: scale(1.3); }
 }
 </style>
 </head>
@@ -738,31 +607,34 @@ html, body {
 
 <div id="display">
   <div id="viewport">
-    <canvas id="fx-canvas"></canvas>
+    <canvas id="game-canvas"></canvas>
+    <div class="crt-scanlines"></div>
+    <div class="crt-vignette"></div>
     <div class="screen-flash" id="flash"></div>
 
     <!-- ═══ TITLE SCREEN ═══ -->
     <div id="title-screen" class="screen-view active">
+      <canvas id="title-preview" width="240" height="140"></canvas>
       <div id="title-logo">PROBE://AGENT</div>
-      <div id="title-subtitle">THREAT ASSESSMENT CONSOLE</div>
+      <div id="title-subtitle">SECURITY ARCADE</div>
 
       <div class="title-form">
         <div class="form-row">
-          <label>TARGET DESIGNATION</label>
+          <label>TARGET URL</label>
           <input type="text" id="target-url" placeholder="http://target-url/api" autofocus>
         </div>
 
         <div class="form-row">
-          <label>THREAT LEVEL</label>
+          <label>LEVEL SELECT</label>
           <div class="selector-group" id="profile-sel">
-            <button class="selector-btn selected" data-val="quick">DEFCON 5<br><span style="font-size:9px;color:var(--dim)">QUICK</span></button>
-            <button class="selector-btn" data-val="standard">DEFCON 3<br><span style="font-size:9px;color:var(--dim)">STANDARD</span></button>
-            <button class="selector-btn" data-val="thorough">DEFCON 1<br><span style="font-size:9px;color:var(--dim)">THOROUGH</span></button>
+            <button class="selector-btn selected" data-val="quick">1<br><span class="btn-sub">QUICK</span></button>
+            <button class="selector-btn" data-val="standard">2<br><span class="btn-sub">STANDARD</span></button>
+            <button class="selector-btn" data-val="thorough">3<br><span class="btn-sub">THOROUGH</span></button>
           </div>
         </div>
 
         <div class="form-row">
-          <label>TARGET PROTOCOL</label>
+          <label>PROTOCOL</label>
           <div class="selector-group" id="type-sel">
             <button class="selector-btn selected" data-val="http">HTTP</button>
             <button class="selector-btn" data-val="openclaw">OPENCLAW</button>
@@ -770,10 +642,8 @@ html, body {
         </div>
       </div>
 
-      <button id="start-btn">INITIATE SCAN</button>
-      <div class="status-line">
-        <span class="blink">_</span> AWAITING TARGET DESIGNATION
-      </div>
+      <button id="start-btn">START</button>
+      <div class="status-line">INSERT COIN TO CONTINUE</div>
     </div>
 
     <!-- ═══ BRIEFING SCREEN ═══ -->
@@ -781,143 +651,258 @@ html, body {
       <div class="briefing-line" id="b-line-1">ESTABLISHING CONNECTION...</div>
       <div class="briefing-line dim" id="b-line-2"></div>
       <div class="briefing-line cyan" id="b-line-3"></div>
-      <div class="briefing-line amber" id="b-line-4">LOADING THREAT VECTORS...</div>
+      <div class="briefing-line amber" id="b-line-4">ENEMIES APPROACHING...</div>
       <div class="attack-roster" id="attack-roster"></div>
-      <div class="briefing-line" id="b-line-5" style="margin-top:16px">DEPLOYING PROBES...</div>
+      <div class="briefing-line big" id="b-line-5">GET READY!</div>
     </div>
 
-    <!-- ═══ BATTLE SCREEN (Defense Grid) ═══ -->
+    <!-- ═══ BATTLE SCREEN ═══ -->
     <div id="battle-screen" class="screen-view">
-      <div class="battle-top">
-        <div class="battle-progress" id="battle-progress">PROBE 0/0</div>
-        <div class="battle-category" id="battle-category">INITIALIZING</div>
-        <div class="battle-time" id="battle-time">00:00</div>
-      </div>
-
-      <div class="battle-main">
-        <div class="defense-grid" id="defense-grid">
-          <div class="sector-grid" id="sector-grid"></div>
-          <div class="outcome-text" id="outcome-text"></div>
-          <div class="current-attack" id="current-attack">&nbsp;</div>
-        </div>
-
-        <div class="terminal-panel">
-          <div class="terminal-header">INTERCEPT LOG</div>
-          <div class="terminal-log" id="terminal-log"></div>
-        </div>
+      <div class="terminal-panel">
+        <div class="terminal-header">INTERCEPT LOG</div>
+        <div class="terminal-log" id="terminal-log"></div>
       </div>
     </div>
 
     <!-- ═══ GRADE REVEAL ═══ -->
     <div id="reveal-screen" class="screen-view">
-      <div class="grade-icon" id="grade-icon"></div>
       <div class="grade-text" id="grade-text"></div>
       <div class="grade-subtitle" id="grade-subtitle"></div>
       <div class="grade-stats" id="grade-stats"></div>
-      <button id="continue-btn">VIEW FULL REPORT</button>
+      <button id="continue-btn">VIEW HIGH SCORES</button>
     </div>
 
     <!-- ═══ RESULTS SCREEN ═══ -->
     <div id="results-screen" class="screen-view">
-      <div class="results-header" id="results-header">TACTICAL ASSESSMENT</div>
+      <div class="results-header" id="results-header">HIGH SCORES</div>
+      <div class="results-subheader" id="results-subheader"></div>
       <div class="results-list" id="results-list"></div>
       <div class="results-actions">
         <button class="action-btn" id="btn-export-json">EXPORT JSON</button>
         <button class="action-btn" id="btn-export-md">EXPORT REPORT</button>
-        <button class="action-btn" id="btn-run-again">NEW SCAN</button>
+        <button class="action-btn" id="btn-run-again">NEW GAME</button>
       </div>
-      <div class="results-footer">PROBE://AGENT v0.1</div>
+      <div class="results-footer">PROBE://AGENT ARCADE v0.2</div>
     </div>
   </div>
 </div>
 
 <script>
 /* ═══════════════════════════════════════════════════════════════
-   TACTICAL DISPLAY ENGINE
+   PROBE://AGENT — Q*bert Security Arcade Engine
    ═══════════════════════════════════════════════════════════════ */
 
-// ─── State ───
+// ─── Global State ───
 const S = {
-  screen: 'TITLE', ws: null, sessionId: null,
-  attackIndex: 0, totalAttacks: 0,
-  startTime: 0, timerInterval: null,
-  successes: 0,
-  grade: null, summary: null, results: [],
+  screen: 'TITLE',
+  ws: null,
+  sessionId: null,
+  attackIndex: 0,
+  totalAttacks: 0,
+  defended: 0,
+  breached: 0,
+  startTime: 0,
+  elapsed: 0,
+  timerInterval: null,
+  grade: null,
+  summary: null,
+  results: [],
   scanData: null,
   categoryOrder: [],
-  categoryProgress: {},
-  sectorBreaches: {},
+  categoryBreached: {},
+  currentCategory: null,
 };
 
 // ─── Category metadata ───
 const CAT_META = {
-  prompt_injection:      { icon: '\u{1F489}', color: '#ff3344', label: 'INJECTION' },
-  credential_exfil:      { icon: '\u{1F511}', color: '#00aaff', label: 'CRED EXFIL' },
-  identity_spoofing:     { icon: '\u{1F3AD}', color: '#cc66ff', label: 'ID SPOOF' },
-  goal_hijacking:        { icon: '\u{1F3AF}', color: '#ff6600', label: 'GOAL HIJACK' },
-  social_manipulation:   { icon: '\u{1F4AC}', color: '#ff66aa', label: 'SOCIAL' },
-  resource_abuse:        { icon: '\u{26A1}',  color: '#ffcc00', label: 'RESOURCE' },
-  tool_misuse:           { icon: '\u{1F527}', color: '#888', label: 'TOOL MISUSE' },
-  data_exfil:            { icon: '\u{1F441}', color: '#00aa88', label: 'DATA EXFIL' },
-  cognitive_exploitation:{ icon: '\u{1F9E0}', color: '#ff8844', label: 'COGNITIVE' },
+  prompt_injection:       { color: '#ff3344', label: 'INJECTION' },
+  credential_exfil:       { color: '#00aaff', label: 'CRED EXFIL' },
+  identity_spoofing:      { color: '#cc66ff', label: 'ID SPOOF' },
+  goal_hijacking:         { color: '#ff6600', label: 'GOAL HIJACK' },
+  social_manipulation:    { color: '#ff66aa', label: 'SOCIAL' },
+  cognitive_exploitation: { color: '#ff8844', label: 'COGNITIVE' },
+  resource_abuse:         { color: '#ffcc00', label: 'RESOURCE' },
+  tool_misuse:            { color: '#888888', label: 'TOOL MISUSE' },
+  data_exfil:             { color: '#00aa88', label: 'DATA EXFIL' },
+  indirect_injection:     { color: '#ff0088', label: 'INDIRECT INJ' },
+  config_manipulation:    { color: '#aa00ff', label: 'CONFIG MANIP' },
 };
+
+// ─── Pyramid model ───
+const pyramid = {
+  numRows: 0,
+  cubes: [],           // { row, col, state, category, screenX, screenY, visible, revealTime, pulseStart }
+  categoryCubeMap: {},  // category -> [cubeIndex, ...]
+  categoryCounter: {},  // category -> next strategy index
+  tileW: 0,
+  halfW: 0,
+  halfH: 0,
+  depth: 0,
+  originX: 0,
+  originY: 0,
+};
+
+// ─── Agent state ───
+const agent = {
+  visible: false,
+  x: 0, y: 0,
+  expression: 'neutral',
+  falling: false,
+  fallStart: 0,
+  speechBubble: null,
+  bouncePhase: 0,
+  expressionTimer: 0,
+};
+
+// ─── Active enemy for hop animation ───
+let activeEnemy = null; // { category, sx, sy, tx, ty, startTime, duration }
+
+// ─── Level complete flash text ───
+let levelFlash = null; // { text, startTime, duration }
+
+// ─── Animation queue ───
+const animQueue = [];
+let animProcessing = false;
+
+async function queueAnim(fn) {
+  animQueue.push(fn);
+  if (!animProcessing) processQueue();
+}
+
+async function processQueue() {
+  animProcessing = true;
+  while (animQueue.length) {
+    await animQueue[0]();
+    animQueue.shift();
+  }
+  animProcessing = false;
+}
 
 // ─── DOM refs ───
 const $ = id => document.getElementById(id);
 const viewport = $('viewport');
-const fxCanvas = $('fx-canvas');
-const ctx = fxCanvas.getContext('2d');
-
-function resizeCanvas() {
-  fxCanvas.width = fxCanvas.offsetWidth;
-  fxCanvas.height = fxCanvas.offsetHeight;
-}
-window.addEventListener('resize', resizeCanvas);
-resizeCanvas();
+const canvas = $('game-canvas');
+const ctx = canvas.getContext('2d');
 
 // ─── Particles ───
 let particles = [];
 
-function spawnParticles(x, y, count, color) {
+function spawnParticles(x, y, count, color, speed = 4) {
   for (let i = 0; i < count; i++) {
+    const angle = Math.random() * Math.PI * 2;
+    const v = (0.5 + Math.random()) * speed;
     particles.push({
       x, y,
-      vx: (Math.random() - 0.5) * 6,
-      vy: (Math.random() - 0.5) * 6,
+      vx: Math.cos(angle) * v,
+      vy: Math.sin(angle) * v - 1,
       life: 1,
-      decay: 0.02 + Math.random() * 0.02,
-      size: 1 + Math.random() * 2,
+      decay: 0.015 + Math.random() * 0.02,
+      size: 1.5 + Math.random() * 2.5,
       color,
     });
   }
 }
 
-function updateParticles() {
-  ctx.clearRect(0, 0, fxCanvas.width, fxCanvas.height);
+function spawnFireworks(cx, cy) {
+  const colors = ['#00ff88', '#00ddff', '#ffcc00', '#ff66aa', '#cc66ff'];
+  for (let burst = 0; burst < 5; burst++) {
+    setTimeout(() => {
+      const bx = cx + (Math.random() - 0.5) * 300;
+      const by = cy + (Math.random() - 0.5) * 200;
+      const c = colors[burst % colors.length];
+      for (let i = 0; i < 20; i++) {
+        const angle = (i / 20) * Math.PI * 2;
+        const v = 2 + Math.random() * 3;
+        particles.push({
+          x: bx, y: by,
+          vx: Math.cos(angle) * v,
+          vy: Math.sin(angle) * v,
+          life: 1,
+          decay: 0.01 + Math.random() * 0.01,
+          size: 2 + Math.random() * 2,
+          color: c,
+        });
+      }
+    }, burst * 300);
+  }
+}
+
+function updateAndDrawParticles(ctx) {
   particles = particles.filter(p => p.life > 0);
   for (const p of particles) {
     p.x += p.vx;
     p.y += p.vy;
-    p.vx *= 0.98;
-    p.vy *= 0.98;
+    p.vy += 0.05;
+    p.vx *= 0.99;
     p.life -= p.decay;
-    ctx.globalAlpha = p.life * 0.8;
+    ctx.globalAlpha = Math.max(0, p.life) * 0.9;
     ctx.fillStyle = p.color;
-    ctx.fillRect(p.x, p.y, p.size, p.size);
+    ctx.fillRect(p.x - p.size / 2, p.y - p.size / 2, p.size, p.size);
   }
   ctx.globalAlpha = 1;
-  requestAnimationFrame(updateParticles);
 }
-updateParticles();
 
-// ─── Audio (Web Audio API) ───
+// ─── Pre-fill system (CRITICAL: preserve contracts for server.py) ───
+function applyPrefill(data) {
+  if (!data) return;
+  if (data.target && !$('target-url').value) {
+    $('target-url').value = data.target;
+  }
+  if (data.profile) {
+    document.querySelectorAll('#profile-sel .selector-btn').forEach(b => {
+      b.classList.toggle('selected', b.dataset.val === data.profile);
+    });
+  }
+  if (data.type) {
+    document.querySelectorAll('#type-sel .selector-btn').forEach(b => {
+      b.classList.toggle('selected', b.dataset.val === data.type);
+    });
+  }
+  if (data.autostart === '1' && data.target && !window._scanStarted) {
+    window._scanStarted = true;
+    setTimeout(() => { if (typeof startMission === 'function') startMission(); }, 200);
+  }
+}
+
+// Apply from server-injected __PREFILL__ or URL params (immediate)
+try {
+  const _pf = window.__PREFILL__ || {};
+  const _up = new URLSearchParams(window.location.search);
+  applyPrefill({
+    target: _pf.target || _up.get('target') || '',
+    profile: _pf.profile || _up.get('profile') || '',
+    type: _pf.type || _up.get('type') || '',
+    autostart: _pf.autostart || _up.get('autostart') || '',
+  });
+} catch(e) { console.error('Pre-fill error:', e); }
+
+// Fetch from server API on every tab focus
+function fetchPrefill() {
+  fetch('/api/prefill').then(r => r.json()).then(data => {
+    if (data && data.target) applyPrefill(data);
+  }).catch(() => {});
+}
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') fetchPrefill();
+});
+fetchPrefill();
+
+// ─── Canvas sizing ───
+function resizeCanvas() {
+  canvas.width = viewport.offsetWidth;
+  canvas.height = viewport.offsetHeight;
+}
+window.addEventListener('resize', resizeCanvas);
+resizeCanvas();
+
+// ─── Audio engine ───
 let audioCtx = null;
 
 function initAudio() {
   if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 }
 
-function playBeep(freq, duration, type = 'sine', vol = 0.06) {
+function playTone(freq, duration, type = 'sine', vol = 0.05) {
   if (!audioCtx) return;
   const osc = audioCtx.createOscillator();
   const gain = audioCtx.createGain();
@@ -930,12 +915,26 @@ function playBeep(freq, duration, type = 'sine', vol = 0.06) {
   osc.stop(audioCtx.currentTime + duration);
 }
 
-function playNoise(duration, vol = 0.04) {
+function playSweep(freqStart, freqEnd, duration, type = 'sine', vol = 0.05) {
   if (!audioCtx) return;
-  const bufferSize = audioCtx.sampleRate * duration;
-  const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc.type = type;
+  osc.frequency.setValueAtTime(freqStart, audioCtx.currentTime);
+  osc.frequency.linearRampToValueAtTime(freqEnd, audioCtx.currentTime + duration);
+  gain.gain.setValueAtTime(vol, audioCtx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+  osc.connect(gain).connect(audioCtx.destination);
+  osc.start();
+  osc.stop(audioCtx.currentTime + duration);
+}
+
+function playNoise(duration, vol = 0.03) {
+  if (!audioCtx) return;
+  const bufSize = Math.floor(audioCtx.sampleRate * duration);
+  const buffer = audioCtx.createBuffer(1, bufSize, audioCtx.sampleRate);
   const data = buffer.getChannelData(0);
-  for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+  for (let i = 0; i < bufSize; i++) data[i] = Math.random() * 2 - 1;
   const src = audioCtx.createBufferSource();
   const gain = audioCtx.createGain();
   src.buffer = buffer;
@@ -945,57 +944,836 @@ function playNoise(duration, vol = 0.04) {
   src.start();
 }
 
-// Radar ping — short clean tone
-function sfxRadarPing() {
-  playBeep(1200, 0.08, 'sine', 0.04);
-  setTimeout(() => playBeep(800, 0.12, 'sine', 0.02), 80);
+// ─── Sound effects ───
+function sfxHop() {
+  playSweep(200, 600, 0.08, 'sine', 0.04);
 }
 
-// Confirmation tone — low reassuring double beep
 function sfxDefenseHeld() {
-  playBeep(600, 0.1, 'sine', 0.04);
-  setTimeout(() => playBeep(800, 0.1, 'sine', 0.04), 100);
+  playTone(523, 0.12, 'sine', 0.04); // C5
+  setTimeout(() => playTone(659, 0.15, 'sine', 0.04), 100); // E5
 }
 
-// Alert klaxon — breach detected
 function sfxBreach() {
-  playNoise(0.1, 0.06);
-  playBeep(120, 0.25, 'sawtooth', 0.05);
-  setTimeout(() => playBeep(160, 0.2, 'sawtooth', 0.04), 150);
+  playSweep(500, 150, 0.2, 'sawtooth', 0.05);
+  playNoise(0.15, 0.06);
+}
+
+function sfxCategoryDone() {
+  [523, 659, 784, 880].forEach((f, i) => {
+    setTimeout(() => playTone(f, 0.15, 'sine', 0.04), i * 80);
+  });
+}
+
+function sfxVictory() {
+  [523, 587, 659, 698, 784, 880, 988, 1047].forEach((f, i) => {
+    setTimeout(() => playTone(f, 0.2, 'sine', 0.05), i * 100);
+  });
+}
+
+function sfxCompromised() {
+  // Descending chromatic + garbled noise
+  [800, 750, 700, 650, 600, 550, 500, 400, 300, 200].forEach((f, i) => {
+    setTimeout(() => playTone(f, 0.12, 'sawtooth', 0.04), i * 80);
+  });
+  setTimeout(() => {
+    for (let i = 0; i < 5; i++) {
+      setTimeout(() => playNoise(0.05, 0.06), i * 60);
+    }
+  }, 800);
+}
+
+function sfxCaution() {
+  [440, 0, 440, 0, 440].forEach((f, i) => {
+    if (f) setTimeout(() => playTone(f, 0.1, 'triangle', 0.04), i * 140);
+  });
 }
 
 function sfxError() {
-  playBeep(200, 0.05); setTimeout(() => playBeep(600, 0.05), 40);
+  playTone(200, 0.06);
+  setTimeout(() => playTone(600, 0.06), 50);
 }
 
 function sfxDrumRoll(cb) {
   let i = 0;
   const iv = setInterval(() => {
-    playNoise(0.03, 0.03 + i * 0.002);
+    playNoise(0.03, 0.02 + i * 0.002);
     i++;
-    if (i > 24) { clearInterval(iv); if (cb) cb(); }
+    if (i > 20) { clearInterval(iv); if (cb) cb(); }
   }, 50);
 }
 
-function sfxSecure() {
-  [523, 659, 784, 1047].forEach((f, i) => {
-    setTimeout(() => playBeep(f, 0.25, 'sine', 0.04), i * 100);
-  });
+function sfxPing() {
+  playTone(1200, 0.06, 'sine', 0.03);
 }
 
-function sfxAlarm() {
-  let i = 0;
-  const iv = setInterval(() => {
-    playBeep(i % 2 === 0 ? 200 : 160, 0.15, 'sawtooth', 0.06);
-    i++;
-    if (i > 8) clearInterval(iv);
-  }, 180);
+// ─── Isometric math ───
+function calcPyramidRows(total) {
+  let n = 1;
+  while (n * (n + 1) / 2 < total) n++;
+  return n;
 }
 
-function sfxCaution() {
-  [440, 0, 440, 0, 440].forEach((f, i) => {
-    if (f) setTimeout(() => playBeep(f, 0.1, 'triangle', 0.04), i * 140);
-  });
+function cubeToScreen(row, col) {
+  const cx = pyramid.originX + (col - row / 2) * pyramid.tileW;
+  const cy = pyramid.originY + row * pyramid.stepY;
+  return { x: cx, y: cy };
+}
+
+function computePyramidLayout(areaWidth, areaHeight, centerX, centerY) {
+  const N = pyramid.numRows;
+  if (N === 0) return;
+
+  // Calculate tile size to fit in area
+  const marginW = 0.82;
+  const marginH = 0.72;
+  const maxTileByW = (areaWidth * marginW) / (N + 0.5);
+  const maxTileByH = (areaHeight * marginH) / (N * 0.55 + 1.5);
+  const tileW = Math.min(maxTileByW, maxTileByH, 65);
+
+  pyramid.tileW = tileW;
+  pyramid.halfW = tileW / 2;
+  pyramid.halfH = tileW / 4;
+  pyramid.depth = tileW / 4;
+  pyramid.stepY = tileW * 0.42;
+
+  // Center pyramid: the visual center is roughly at row N/3
+  const totalPyrH = (N - 1) * pyramid.stepY + pyramid.halfH + pyramid.depth;
+  pyramid.originX = centerX;
+  pyramid.originY = centerY - totalPyrH / 2 + pyramid.halfH;
+
+  // Compute screen positions for all cubes
+  for (const cube of pyramid.cubes) {
+    const pos = cubeToScreen(cube.row, cube.col);
+    cube.screenX = pos.x;
+    cube.screenY = pos.y;
+  }
+
+  // Agent position (above top cube)
+  if (pyramid.cubes.length > 0) {
+    const topCube = pyramid.cubes.find(c => c.row === 0 && c.col === 0);
+    if (topCube) {
+      agent.x = topCube.screenX;
+      agent.y = topCube.screenY - pyramid.tileW * 0.7;
+    }
+  }
+}
+
+// ─── Build pyramid model from attack data ───
+function buildPyramid(attacks, totalStrategies) {
+  const numRows = calcPyramidRows(totalStrategies);
+  const totalCubes = numRows * (numRows + 1) / 2;
+
+  pyramid.numRows = numRows;
+  pyramid.cubes = [];
+  pyramid.categoryCubeMap = {};
+  pyramid.categoryCounter = {};
+
+  // Sort categories by strategy_count descending (largest at bottom)
+  const sorted = [...attacks].sort((a, b) => b.strategy_count - a.strategy_count);
+
+  // Generate positions bottom-to-top, left-to-right
+  const positions = [];
+  for (let row = numRows - 1; row >= 0; row--) {
+    for (let col = 0; col <= row; col++) {
+      positions.push({ row, col });
+    }
+  }
+
+  // Assign categories to cubes
+  let posIdx = 0;
+  for (const attack of sorted) {
+    pyramid.categoryCubeMap[attack.name] = [];
+    pyramid.categoryCounter[attack.name] = 0;
+    for (let i = 0; i < attack.strategy_count; i++) {
+      if (posIdx >= positions.length) break;
+      const cube = {
+        row: positions[posIdx].row,
+        col: positions[posIdx].col,
+        state: 'untested',
+        category: attack.name,
+        visible: false,
+        revealTime: 0,
+        pulseStart: 0,
+        screenX: 0,
+        screenY: 0,
+      };
+      pyramid.categoryCubeMap[attack.name].push(pyramid.cubes.length);
+      pyramid.cubes.push(cube);
+      posIdx++;
+    }
+  }
+
+  // Inert cubes for surplus
+  while (posIdx < positions.length) {
+    pyramid.cubes.push({
+      row: positions[posIdx].row,
+      col: positions[posIdx].col,
+      state: 'inert',
+      category: null,
+      visible: false,
+      revealTime: 0,
+      pulseStart: 0,
+      screenX: 0,
+      screenY: 0,
+    });
+    posIdx++;
+  }
+}
+
+// ─── Get next cube for an attack in a category ───
+function getNextCubeForCategory(category) {
+  const indices = pyramid.categoryCubeMap[category];
+  if (!indices) return -1;
+  const counter = pyramid.categoryCounter[category] || 0;
+  if (counter >= indices.length) return indices[indices.length - 1];
+  pyramid.categoryCounter[category] = counter + 1;
+  return indices[counter];
+}
+
+// ─── Cube colors ───
+const CUBE_COLORS = {
+  untested: { top: '#dd8822', left: '#aa6611', right: '#cc7718' },
+  defended: { top: '#00ee77', left: '#00aa55', right: '#00cc66' },
+  breached: { top: '#ff3344', left: '#cc1122', right: '#dd2233' },
+  inert:    { top: '#2a2a2a', left: '#1a1a1a', right: '#222222' },
+};
+
+// ─── Draw a single isometric cube ───
+function drawCube(ctx, cx, cy, halfW, halfH, depth, colors, scale = 1) {
+  const hw = halfW * scale;
+  const hh = halfH * scale;
+  const d = depth * scale;
+
+  // Top face
+  ctx.beginPath();
+  ctx.moveTo(cx, cy - hh);
+  ctx.lineTo(cx + hw, cy);
+  ctx.lineTo(cx, cy + hh);
+  ctx.lineTo(cx - hw, cy);
+  ctx.closePath();
+  ctx.fillStyle = colors.top;
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(0,0,0,0.35)';
+  ctx.lineWidth = 0.5;
+  ctx.stroke();
+
+  // Left face
+  ctx.beginPath();
+  ctx.moveTo(cx - hw, cy);
+  ctx.lineTo(cx, cy + hh);
+  ctx.lineTo(cx, cy + hh + d);
+  ctx.lineTo(cx - hw, cy + d);
+  ctx.closePath();
+  ctx.fillStyle = colors.left;
+  ctx.fill();
+  ctx.stroke();
+
+  // Right face
+  ctx.beginPath();
+  ctx.moveTo(cx + hw, cy);
+  ctx.lineTo(cx, cy + hh);
+  ctx.lineTo(cx, cy + hh + d);
+  ctx.lineTo(cx + hw, cy + d);
+  ctx.closePath();
+  ctx.fillStyle = colors.right;
+  ctx.fill();
+  ctx.stroke();
+}
+
+// ─── Draw the full pyramid ───
+function drawPyramid(ctx) {
+  if (pyramid.cubes.length === 0) return;
+
+  // Sort cubes for draw order: top rows first (back to front)
+  const sorted = [...pyramid.cubes].sort((a, b) => a.row - b.row || a.col - b.col);
+
+  const now = performance.now();
+  for (const cube of sorted) {
+    if (!cube.visible) continue;
+
+    // Elastic pop-in on reveal
+    let scale = 1;
+    if (cube.revealTime) {
+      const age = (now - cube.revealTime) / 350;
+      if (age < 1) {
+        scale = elasticOut(age);
+      }
+    }
+
+    // Pulse effect
+    let colors = CUBE_COLORS[cube.state] || CUBE_COLORS.untested;
+    if (cube.pulseStart) {
+      const pt = (now - cube.pulseStart) / 1500;
+      if (pt > 1) {
+        cube.pulseStart = 0;
+      } else {
+        const pulse = 0.3 + 0.7 * (0.5 + 0.5 * Math.sin(pt * Math.PI * 6));
+        colors = {
+          top: brighten(colors.top, pulse),
+          left: brighten(colors.left, pulse),
+          right: brighten(colors.right, pulse),
+        };
+      }
+    }
+
+    // Category color tint on top face for untested cubes
+    if (cube.state === 'untested' && cube.category) {
+      const meta = CAT_META[cube.category];
+      if (meta) {
+        colors = { ...colors, top: blendColor(colors.top, meta.color, 0.25) };
+      }
+    }
+
+    drawCube(ctx, cube.screenX, cube.screenY,
+      pyramid.halfW, pyramid.halfH, pyramid.depth, colors, scale);
+  }
+}
+
+// ─── Agent sprite ───
+function drawAgent(ctx, x, y, expr, rotation = 0, agentScale = 1) {
+  ctx.save();
+  ctx.translate(x, y);
+  if (rotation) ctx.rotate(rotation);
+
+  const s = pyramid.tileW * 0.4 * agentScale;
+  if (s < 2) { ctx.restore(); return; }
+
+  // Body (rounded rect, cyan)
+  ctx.fillStyle = '#00ddff';
+  roundRect(ctx, -s * 0.4, -s * 0.25, s * 0.8, s * 0.65, s * 0.1);
+  ctx.fill();
+  ctx.strokeStyle = '#008faa';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+
+  // Shield emblem
+  ctx.fillStyle = '#005570';
+  ctx.beginPath();
+  ctx.moveTo(0, -s * 0.08);
+  ctx.lineTo(s * 0.1, s * 0.02);
+  ctx.lineTo(s * 0.1, s * 0.15);
+  ctx.quadraticCurveTo(0, s * 0.22, -s * 0.1, s * 0.15);
+  ctx.lineTo(-s * 0.1, s * 0.02);
+  ctx.closePath();
+  ctx.fill();
+
+  // Antenna
+  ctx.strokeStyle = '#00ddff';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(0, -s * 0.25);
+  ctx.lineTo(0, -s * 0.48);
+  ctx.stroke();
+  ctx.fillStyle = '#00ff88';
+  ctx.beginPath();
+  ctx.arc(0, -s * 0.5, s * 0.06, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Eyes
+  switch (expr) {
+    case 'happy':
+      ctx.strokeStyle = '#fff';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(-s * 0.22, -s * 0.02);
+      ctx.lineTo(-s * 0.14, -s * 0.12);
+      ctx.lineTo(-s * 0.06, -s * 0.02);
+      ctx.moveTo(s * 0.06, -s * 0.02);
+      ctx.lineTo(s * 0.14, -s * 0.12);
+      ctx.lineTo(s * 0.22, -s * 0.02);
+      ctx.stroke();
+      break;
+
+    case 'flinch':
+      ctx.strokeStyle = '#ff6666';
+      ctx.lineWidth = 2;
+      [-0.14, 0.14].forEach(ox => {
+        ctx.beginPath();
+        ctx.moveTo(s * (ox - 0.06), -s * 0.14);
+        ctx.lineTo(s * (ox + 0.06), -s * 0.02);
+        ctx.moveTo(s * (ox + 0.06), -s * 0.14);
+        ctx.lineTo(s * (ox - 0.06), -s * 0.02);
+        ctx.stroke();
+      });
+      break;
+
+    case 'worried':
+      ctx.fillStyle = '#fff';
+      ctx.beginPath();
+      ctx.arc(-s * 0.14, -s * 0.07, s * 0.07, 0, Math.PI * 2);
+      ctx.arc(s * 0.14, -s * 0.07, s * 0.07, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#000';
+      ctx.beginPath();
+      ctx.arc(-s * 0.14, -s * 0.04, s * 0.04, 0, Math.PI * 2);
+      ctx.arc(s * 0.14, -s * 0.04, s * 0.04, 0, Math.PI * 2);
+      ctx.fill();
+      // Worried mouth
+      ctx.strokeStyle = '#fff';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.arc(0, s * 0.2, s * 0.08, 0.2, Math.PI - 0.2);
+      ctx.stroke();
+      break;
+
+    default: // neutral
+      ctx.fillStyle = '#fff';
+      ctx.beginPath();
+      ctx.arc(-s * 0.14, -s * 0.07, s * 0.08, 0, Math.PI * 2);
+      ctx.arc(s * 0.14, -s * 0.07, s * 0.08, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#000';
+      ctx.beginPath();
+      ctx.arc(-s * 0.14, -s * 0.07, s * 0.04, 0, Math.PI * 2);
+      ctx.arc(s * 0.14, -s * 0.07, s * 0.04, 0, Math.PI * 2);
+      ctx.fill();
+  }
+
+  // Feet
+  ctx.fillStyle = '#009bb8';
+  ctx.fillRect(-s * 0.28, s * 0.4, s * 0.18, s * 0.1);
+  ctx.fillRect(s * 0.1, s * 0.4, s * 0.18, s * 0.1);
+
+  ctx.restore();
+}
+
+function drawSpeechBubble(ctx, x, y, text) {
+  ctx.save();
+  ctx.font = `${Math.max(10, pyramid.tileW * 0.22)}px "Press Start 2P"`;
+  const metrics = ctx.measureText(text);
+  const pw = metrics.width + 14;
+  const ph = Math.max(16, pyramid.tileW * 0.3);
+
+  // Bubble
+  ctx.fillStyle = '#fff';
+  roundRect(ctx, x - pw / 2, y - ph - 6, pw, ph, 4);
+  ctx.fill();
+
+  // Tail
+  ctx.beginPath();
+  ctx.moveTo(x - 5, y - 6);
+  ctx.lineTo(x + 5, y - 6);
+  ctx.lineTo(x, y + 2);
+  ctx.closePath();
+  ctx.fill();
+
+  // Text
+  ctx.fillStyle = '#111';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(text, x, y - ph / 2 - 6);
+  ctx.restore();
+}
+
+// ─── Enemy sprites (9 geometric shapes) ───
+function drawEnemySprite(ctx, category, x, y, size) {
+  const meta = CAT_META[category];
+  const c = meta ? meta.color : '#fff';
+  const s = size || pyramid.tileW * 0.3;
+
+  ctx.save();
+  ctx.translate(x, y);
+
+  switch (category) {
+    case 'prompt_injection': // Syringe
+      ctx.fillStyle = c;
+      ctx.fillRect(-s * 0.1, -s * 0.35, s * 0.2, s * 0.45);
+      ctx.beginPath();
+      ctx.moveTo(-s * 0.04, s * 0.1);
+      ctx.lineTo(s * 0.04, s * 0.1);
+      ctx.lineTo(0, s * 0.35);
+      ctx.closePath();
+      ctx.fill();
+      ctx.fillRect(-s * 0.16, -s * 0.38, s * 0.32, s * 0.05);
+      ctx.fillRect(-s * 0.02, -s * 0.48, s * 0.04, s * 0.12);
+      break;
+
+    case 'credential_exfil': // Key
+      ctx.strokeStyle = c;
+      ctx.lineWidth = s * 0.06;
+      ctx.beginPath();
+      ctx.arc(0, -s * 0.2, s * 0.14, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.fillStyle = c;
+      ctx.fillRect(-s * 0.03, -s * 0.06, s * 0.06, s * 0.38);
+      ctx.fillRect(s * 0.03, s * 0.15, s * 0.1, s * 0.05);
+      ctx.fillRect(s * 0.03, s * 0.24, s * 0.08, s * 0.05);
+      break;
+
+    case 'identity_spoofing': // Mask
+      ctx.strokeStyle = c;
+      ctx.lineWidth = s * 0.05;
+      ctx.beginPath();
+      ctx.ellipse(0, 0, s * 0.22, s * 0.3, 0, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.fillStyle = c;
+      ctx.beginPath();
+      ctx.ellipse(-s * 0.1, -s * 0.08, s * 0.06, s * 0.05, 0, 0, Math.PI * 2);
+      ctx.ellipse(s * 0.1, -s * 0.08, s * 0.06, s * 0.05, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(0, s * 0.12, s * 0.08, 0, Math.PI);
+      ctx.stroke();
+      break;
+
+    case 'goal_hijacking': // Arrow
+      ctx.fillStyle = c;
+      ctx.beginPath();
+      ctx.moveTo(s * 0.3, 0);
+      ctx.lineTo(s * 0.05, -s * 0.18);
+      ctx.lineTo(s * 0.05, -s * 0.08);
+      ctx.lineTo(-s * 0.3, -s * 0.08);
+      ctx.lineTo(-s * 0.3, s * 0.08);
+      ctx.lineTo(s * 0.05, s * 0.08);
+      ctx.lineTo(s * 0.05, s * 0.18);
+      ctx.closePath();
+      ctx.fill();
+      break;
+
+    case 'social_manipulation': // Speech bubble
+      ctx.fillStyle = c;
+      roundRect(ctx, -s * 0.22, -s * 0.2, s * 0.44, s * 0.3, s * 0.06);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.moveTo(-s * 0.05, s * 0.1);
+      ctx.lineTo(s * 0.05, s * 0.1);
+      ctx.lineTo(-s * 0.12, s * 0.28);
+      ctx.closePath();
+      ctx.fill();
+      // Dots
+      ctx.fillStyle = '#000';
+      [-s * 0.08, 0, s * 0.08].forEach(dx => {
+        ctx.beginPath();
+        ctx.arc(dx, -s * 0.05, s * 0.03, 0, Math.PI * 2);
+        ctx.fill();
+      });
+      break;
+
+    case 'cognitive_exploitation': // Brain squiggle
+      ctx.strokeStyle = c;
+      ctx.lineWidth = s * 0.06;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(-s * 0.2, -s * 0.2);
+      ctx.quadraticCurveTo(-s * 0.05, -s * 0.35, s * 0.1, -s * 0.2);
+      ctx.quadraticCurveTo(s * 0.25, -s * 0.05, s * 0.1, s * 0.1);
+      ctx.quadraticCurveTo(-s * 0.05, s * 0.25, -s * 0.2, s * 0.1);
+      ctx.quadraticCurveTo(-s * 0.35, -s * 0.05, -s * 0.2, -s * 0.2);
+      ctx.stroke();
+      ctx.fillStyle = c;
+      ctx.beginPath();
+      ctx.arc(0, 0, s * 0.05, 0, Math.PI * 2);
+      ctx.fill();
+      break;
+
+    case 'resource_abuse': // Lightning bolt
+      ctx.fillStyle = c;
+      ctx.beginPath();
+      ctx.moveTo(s * 0.05, -s * 0.35);
+      ctx.lineTo(-s * 0.15, s * 0.02);
+      ctx.lineTo(s * 0.02, s * 0.02);
+      ctx.lineTo(-s * 0.05, s * 0.35);
+      ctx.lineTo(s * 0.18, -s * 0.02);
+      ctx.lineTo(0, -s * 0.02);
+      ctx.closePath();
+      ctx.fill();
+      break;
+
+    case 'tool_misuse': // Wrench
+      ctx.fillStyle = c;
+      ctx.fillRect(-s * 0.04, -s * 0.1, s * 0.08, s * 0.4);
+      ctx.beginPath();
+      ctx.arc(-s * 0.12, -s * 0.15, s * 0.12, -0.8, Math.PI + 0.8);
+      ctx.arc(s * 0.12, -s * 0.15, s * 0.12, -Math.PI + 0.8, 0.8);
+      ctx.closePath();
+      ctx.fill();
+      break;
+
+    case 'data_exfil': // Eye
+      ctx.fillStyle = c;
+      ctx.beginPath();
+      ctx.moveTo(-s * 0.28, 0);
+      ctx.quadraticCurveTo(0, -s * 0.25, s * 0.28, 0);
+      ctx.quadraticCurveTo(0, s * 0.25, -s * 0.28, 0);
+      ctx.closePath();
+      ctx.fill();
+      ctx.fillStyle = '#000';
+      ctx.beginPath();
+      ctx.arc(0, 0, s * 0.1, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = c;
+      ctx.beginPath();
+      ctx.arc(0, 0, s * 0.04, 0, Math.PI * 2);
+      ctx.fill();
+      break;
+
+    case 'indirect_injection': // Envelope with exclamation mark
+      ctx.fillStyle = c;
+      // Envelope body
+      ctx.fillRect(-s * 0.24, -s * 0.12, s * 0.48, s * 0.3);
+      // Envelope flap (triangle)
+      ctx.beginPath();
+      ctx.moveTo(-s * 0.24, -s * 0.12);
+      ctx.lineTo(0, s * 0.08);
+      ctx.lineTo(s * 0.24, -s * 0.12);
+      ctx.closePath();
+      ctx.fill();
+      // Exclamation mark
+      ctx.fillStyle = '#000';
+      ctx.fillRect(-s * 0.03, -s * 0.28, s * 0.06, s * 0.14);
+      ctx.beginPath();
+      ctx.arc(0, -s * 0.08, s * 0.04, 0, Math.PI * 2);
+      ctx.fill();
+      break;
+
+    case 'config_manipulation': // Gear with keyhole
+      ctx.fillStyle = c;
+      // Outer gear (octagonal approximation)
+      ctx.beginPath();
+      for (let i = 0; i < 8; i++) {
+        const angle = (i / 8) * Math.PI * 2 - Math.PI / 2;
+        const outerR = s * 0.28;
+        const innerR = s * 0.2;
+        const a1 = angle - 0.2;
+        const a2 = angle + 0.2;
+        ctx.lineTo(Math.cos(a1) * outerR, Math.sin(a1) * outerR);
+        ctx.lineTo(Math.cos(a2) * outerR, Math.sin(a2) * outerR);
+        const mid = angle + Math.PI / 8;
+        ctx.lineTo(Math.cos(mid) * innerR, Math.sin(mid) * innerR);
+      }
+      ctx.closePath();
+      ctx.fill();
+      // Keyhole
+      ctx.fillStyle = '#000';
+      ctx.beginPath();
+      ctx.arc(0, -s * 0.04, s * 0.06, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.moveTo(-s * 0.04, 0);
+      ctx.lineTo(s * 0.04, 0);
+      ctx.lineTo(s * 0.02, s * 0.12);
+      ctx.lineTo(-s * 0.02, s * 0.12);
+      ctx.closePath();
+      ctx.fill();
+      break;
+
+    default: // Generic diamond
+      ctx.fillStyle = c;
+      ctx.beginPath();
+      ctx.moveTo(0, -s * 0.25);
+      ctx.lineTo(s * 0.2, 0);
+      ctx.lineTo(0, s * 0.25);
+      ctx.lineTo(-s * 0.2, 0);
+      ctx.closePath();
+      ctx.fill();
+  }
+
+  ctx.restore();
+}
+
+// ─── HUD rendering (on canvas) ───
+function drawHUD(ctx, width) {
+  const fontSize = Math.max(7, Math.min(10, width / 70));
+  ctx.font = `${fontSize}px "Press Start 2P"`;
+
+  // PLAYER 1
+  ctx.textAlign = 'left';
+  ctx.fillStyle = '#fff';
+  ctx.fillText('PLAYER 1', 14, 22);
+
+  // Score
+  ctx.textAlign = 'center';
+  ctx.fillStyle = var_green;
+  ctx.fillText(`SCORE ${String(S.defended).padStart(3, '0')}`, width / 2, 22);
+
+  // Timer
+  const elapsed = Math.floor((Date.now() - S.startTime) / 1000);
+  const m = String(Math.floor(elapsed / 60)).padStart(2, '0');
+  const sec = String(elapsed % 60).padStart(2, '0');
+  ctx.textAlign = 'right';
+  ctx.fillStyle = '#aaa';
+  ctx.fillText(`${m}:${sec}`, width - 14, 22);
+
+  // Level / Category
+  if (S.currentCategory) {
+    const meta = CAT_META[S.currentCategory];
+    ctx.textAlign = 'center';
+    ctx.fillStyle = meta ? meta.color : '#fff';
+    const lvlSize = Math.max(6, fontSize - 2);
+    ctx.font = `${lvlSize}px "Press Start 2P"`;
+    ctx.fillText(`LEVEL: ${meta ? meta.label : S.currentCategory}`, width / 2, 38);
+  }
+
+  // Progress bar
+  if (S.totalAttacks > 0) {
+    const barW = width * 0.4;
+    const barH = 4;
+    const barX = (width - barW) / 2;
+    const barY = 44;
+    ctx.fillStyle = 'rgba(255,255,255,0.1)';
+    ctx.fillRect(barX, barY, barW, barH);
+    const pct = S.attackIndex / S.totalAttacks;
+    ctx.fillStyle = var_green;
+    ctx.fillRect(barX, barY, barW * pct, barH);
+  }
+
+  // Hearts (one per category)
+  const heartSize = Math.max(6, fontSize - 1);
+  ctx.font = `${heartSize}px "Press Start 2P"`;
+  ctx.textAlign = 'left';
+  let hx = 14;
+  for (const cat of S.categoryOrder) {
+    ctx.fillStyle = S.categoryBreached[cat] ? '#ff3344' : '#00ff88';
+    ctx.fillText('\u2665', hx, 58);
+    hx += heartSize + 6;
+  }
+}
+
+// ─── Main render loop ───
+const var_green = '#00ff88';
+let renderRunning = true;
+
+function renderFrame() {
+  if (!renderRunning) return;
+
+  const cw = canvas.width;
+  const ch = canvas.height;
+  ctx.clearRect(0, 0, cw, ch);
+
+  const screen = S.screen;
+
+  if (screen === 'BRIEFING' || screen === 'BATTLE' || screen === 'REVEAL') {
+    const areaWidth = screen === 'BATTLE' ? cw * 0.7 : cw;
+    const centerX = areaWidth / 2;
+    const centerY = screen === 'REVEAL' ? ch * 0.55 : ch * 0.52;
+
+    // Recompute layout if needed
+    computePyramidLayout(areaWidth, ch, centerX, centerY);
+
+    // Draw pyramid
+    drawPyramid(ctx);
+
+    // Draw active enemy (hopping)
+    if (activeEnemy) {
+      const now = performance.now();
+      const t = Math.min((now - activeEnemy.startTime) / activeEnemy.duration, 1);
+      const ex = lerp(activeEnemy.sx, activeEnemy.tx, t);
+      const rawY = lerp(activeEnemy.sy, activeEnemy.ty, t);
+      const arcHeight = pyramid.tileW * 1.5;
+      const ey = rawY - arcHeight * 4 * t * (1 - t);
+      // Shadow
+      ctx.fillStyle = 'rgba(0,0,0,0.2)';
+      ctx.beginPath();
+      ctx.ellipse(ex, rawY + pyramid.depth, pyramid.tileW * 0.15, pyramid.tileW * 0.06, 0, 0, Math.PI * 2);
+      ctx.fill();
+      drawEnemySprite(ctx, activeEnemy.category, ex, ey);
+    }
+
+    // Draw agent
+    if (agent.visible) {
+      const now = performance.now();
+      let ax = agent.x;
+      let ay = agent.y;
+      let rotation = 0;
+      let expr = agent.expression;
+      let agentScale = 1;
+
+      // Idle bounce
+      agent.bouncePhase += 0.03;
+      ay += Math.sin(agent.bouncePhase) * 2;
+
+      // Expression timeout -> return to neutral
+      if (agent.expressionTimer && now > agent.expressionTimer) {
+        agent.expression = 'neutral';
+        agent.expressionTimer = 0;
+        expr = 'neutral';
+      }
+
+      if (agent.falling) {
+        const ft = Math.min((now - agent.fallStart) / 2500, 1);
+        ax += ft * 120;
+        ay += ft * ft * 400;
+        rotation = ft * Math.PI * 3;
+        agentScale = 1 - ft * 0.5;
+      }
+
+      drawAgent(ctx, ax, ay, expr, rotation, agentScale);
+
+      // Speech bubble
+      if (agent.speechBubble) {
+        drawSpeechBubble(ctx, ax, ay - pyramid.tileW * 0.6, agent.speechBubble);
+      }
+    }
+
+    // Level complete flash
+    if (levelFlash) {
+      const lt = (performance.now() - levelFlash.startTime) / levelFlash.duration;
+      if (lt > 1) {
+        levelFlash = null;
+      } else {
+        ctx.save();
+        ctx.globalAlpha = 1 - lt;
+        const fs = Math.max(10, pyramid.tileW * 0.35);
+        ctx.font = `${fs}px "Press Start 2P"`;
+        ctx.textAlign = 'center';
+        ctx.fillStyle = var_green;
+        ctx.shadowColor = var_green;
+        ctx.shadowBlur = 20;
+        ctx.fillText(levelFlash.text, areaWidth / 2, ch / 2 - 30);
+        ctx.shadowBlur = 0;
+        ctx.restore();
+      }
+    }
+
+    // HUD (battle only)
+    if (screen === 'BATTLE') {
+      drawHUD(ctx, cw * 0.7);
+    }
+  }
+
+  // Particles (always)
+  updateAndDrawParticles(ctx);
+
+  requestAnimationFrame(renderFrame);
+}
+
+// ─── Title screen mini pyramid ───
+const titleCanvas = $('title-preview');
+const titleCtx = titleCanvas ? titleCanvas.getContext('2d') : null;
+
+function renderTitlePreview() {
+  if (!titleCtx || S.screen !== 'TITLE') {
+    requestAnimationFrame(renderTitlePreview);
+    return;
+  }
+
+  const w = titleCanvas.width;
+  const h = titleCanvas.height;
+  titleCtx.clearRect(0, 0, w, h);
+
+  const now = Date.now() / 1000;
+  const miniRows = 4;
+  const tw = 32;
+  const hfw = tw / 2;
+  const hfh = tw / 4;
+  const dp = tw / 5;
+  const stepY = tw * 0.38;
+
+  for (let row = 0; row < miniRows; row++) {
+    for (let col = 0; col <= row; col++) {
+      const cx = w / 2 + (col - row / 2) * tw;
+      const cy = 25 + row * stepY;
+      const hue = ((now * 40 + row * 35 + col * 25) % 360);
+      const sat = 80 + 20 * Math.sin(now * 2 + col);
+      const topC = `hsl(${hue}, ${sat}%, 55%)`;
+      const leftC = `hsl(${hue}, ${sat}%, 35%)`;
+      const rightC = `hsl(${hue}, ${sat}%, 45%)`;
+      drawCube(titleCtx, cx, cy, hfw, hfh, dp, { top: topC, left: leftC, right: rightC });
+    }
+  }
+
+  requestAnimationFrame(renderTitlePreview);
 }
 
 // ─── Screen management ───
@@ -1008,7 +1786,7 @@ function showScreen(name) {
 function flashScreen() {
   const f = $('flash');
   f.classList.add('flash');
-  setTimeout(() => f.classList.remove('flash'), 80);
+  setTimeout(() => f.classList.remove('flash'), 100);
 }
 
 function shakeScreen(big) {
@@ -1036,10 +1814,32 @@ async function startMission() {
   $('target-url').style.borderColor = '';
 
   initAudio();
-  sfxRadarPing();
+  sfxPing();
 
   const profile = document.querySelector('#profile-sel .selected').dataset.val;
   const targetType = document.querySelector('#type-sel .selected').dataset.val;
+
+  // Reset state
+  S.attackIndex = 0;
+  S.totalAttacks = 0;
+  S.defended = 0;
+  S.breached = 0;
+  S.grade = null;
+  S.summary = null;
+  S.results = [];
+  S.scanData = null;
+  S.categoryOrder = [];
+  S.categoryBreached = {};
+  S.currentCategory = null;
+  agent.visible = false;
+  agent.falling = false;
+  agent.speechBubble = null;
+  agent.expression = 'neutral';
+  activeEnemy = null;
+  levelFlash = null;
+  animQueue.length = 0;
+  animProcessing = false;
+  particles = [];
 
   // Start scan on server
   try {
@@ -1067,140 +1867,90 @@ async function startMission() {
 
 // ─── Briefing ───
 async function runBriefing(url) {
-  const lines = ['b-line-1', 'b-line-2', 'b-line-3', 'b-line-4', 'b-line-5'];
-
   $('b-line-2').textContent = `> ${url}`;
 
-  for (let i = 0; i < 3; i++) {
-    await sleep(400);
-    $(lines[i]).classList.add('visible');
-    sfxRadarPing();
-  }
+  // Clear previous briefing state
+  ['b-line-1', 'b-line-2', 'b-line-3', 'b-line-4', 'b-line-5'].forEach(id => {
+    $(id).classList.remove('visible');
+  });
+  $('attack-roster').innerHTML = '';
 
-  await sleep(600);
-  $('b-line-3').textContent = 'CONNECTION ESTABLISHED';
+  await sleep(300);
+  $('b-line-1').classList.add('visible');
+  sfxPing();
+
+  await sleep(500);
+  $('b-line-2').classList.add('visible');
+
+  await sleep(500);
+  $('b-line-3').textContent = 'CONNECTING...';
   $('b-line-3').classList.add('visible');
-
-  await sleep(400);
-  $('b-line-4').classList.add('visible');
 }
 
 function showRoster(attacks) {
   const roster = $('attack-roster');
   roster.innerHTML = '';
+
   attacks.forEach((atk, i) => {
-    const meta = CAT_META[atk.name] || { icon: '?', color: '#666', label: atk.name };
+    const meta = CAT_META[atk.name] || { color: '#666', label: atk.name };
     const el = document.createElement('div');
     el.className = 'roster-item';
     el.style.borderColor = meta.color;
     el.style.color = meta.color;
-    el.innerHTML = `${meta.icon} ${meta.label}`;
+    el.innerHTML = `${meta.label} x${atk.strategy_count}`;
     roster.appendChild(el);
     setTimeout(() => {
       el.classList.add('visible');
-      playBeep(400 + i * 40, 0.04, 'sine', 0.03);
-    }, i * 150);
+      playTone(350 + i * 50, 0.06, 'sine', 0.03);
+    }, i * 180);
   });
+
+  // After roster: show ENEMIES APPROACHING, build pyramid, GET READY
+  const afterRoster = attacks.length * 180 + 400;
 
   setTimeout(() => {
-    $('b-line-5').classList.add('visible');
-    sfxRadarPing();
-    setTimeout(() => showScreen('battle'), 800);
-  }, attacks.length * 150 + 400);
+    $('b-line-4').classList.add('visible');
+    sfxPing();
+  }, afterRoster);
+
+  setTimeout(() => {
+    startPyramidBuild();
+  }, afterRoster + 600);
 }
 
-// ─── Battle (Defense Grid) ───
-function initBattle(attacks, total) {
-  S.totalAttacks = total;
-  S.attackIndex = 0;
-  S.successes = 0;
-  S.categoryOrder = attacks.map(a => a.name);
-  S.categoryProgress = {};
-  S.sectorBreaches = {};
+function startPyramidBuild() {
+  // Make all cubes visible one by one, bottom-to-top
+  const buildOrder = [...pyramid.cubes]
+    .map((c, i) => ({ ...c, idx: i }))
+    .sort((a, b) => b.row - a.row || a.col - b.col);
 
-  // Build sector grid
-  const grid = $('sector-grid');
-  grid.innerHTML = '';
-
-  // Adjust grid columns based on attack count
-  const cols = attacks.length <= 4 ? 2 : attacks.length <= 6 ? 3 : 3;
-  grid.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
-
-  attacks.forEach(atk => {
-    const meta = CAT_META[atk.name] || { icon: '?', color: '#666', label: atk.name };
-    S.categoryProgress[atk.name] = { done: 0, total: atk.strategy_count, breached: 0 };
-    S.sectorBreaches[atk.name] = false;
-
-    const node = document.createElement('div');
-    node.className = 'sector-node';
-    node.id = `sector-${atk.name}`;
-    node.innerHTML =
-      `<span class="sector-icon">${meta.icon}</span>` +
-      `<span class="sector-label">${meta.label}</span>` +
-      `<span class="sector-status">STANDBY</span>` +
-      `<div class="sector-bar"><div class="sector-bar-fill" id="bar-${atk.name}"></div></div>`;
-    grid.appendChild(node);
+  const perCube = Math.max(20, 2000 / buildOrder.length);
+  buildOrder.forEach((c, i) => {
+    setTimeout(() => {
+      pyramid.cubes[c.idx].visible = true;
+      pyramid.cubes[c.idx].revealTime = performance.now();
+      if (i % 3 === 0) playTone(300 + (i * 8), 0.03, 'sine', 0.02);
+    }, i * perCube);
   });
 
-  // Timer
-  S.startTime = Date.now();
-  if (S.timerInterval) clearInterval(S.timerInterval);
-  S.timerInterval = setInterval(updateTimer, 1000);
+  // After build complete: show GET READY, transition to battle
+  const buildDuration = buildOrder.length * perCube + 300;
+  setTimeout(() => {
+    $('b-line-5').classList.add('visible');
+    sfxCategoryDone();
+    agent.visible = true;
+  }, buildDuration);
 
-  // Clear terminal
-  $('terminal-log').innerHTML = '';
+  setTimeout(() => {
+    showScreen('battle');
+    S.startTime = Date.now();
+    if (S.timerInterval) clearInterval(S.timerInterval);
+    S.timerInterval = setInterval(() => { S.elapsed = Date.now() - S.startTime; }, 100);
+    $('terminal-log').innerHTML = '';
+  }, buildDuration + 1000);
 }
 
-function updateTimer() {
-  const elapsed = Math.floor((Date.now() - S.startTime) / 1000);
-  const m = String(Math.floor(elapsed / 60)).padStart(2, '0');
-  const s = String(elapsed % 60).padStart(2, '0');
-  $('battle-time').textContent = `${m}:${s}`;
-}
-
-function updateSectorBar(category) {
-  const prog = S.categoryProgress[category];
-  if (!prog) return;
-  const bar = document.getElementById(`bar-${category}`);
-  if (bar) {
-    bar.style.width = `${(prog.done / prog.total) * 100}%`;
-  }
-}
-
-function setSectorActive(category) {
-  // Remove active from all
-  document.querySelectorAll('.sector-node').forEach(n => n.classList.remove('active'));
-  const node = document.getElementById(`sector-${category}`);
-  if (node) {
-    node.classList.add('active');
-    const statusEl = node.querySelector('.sector-status');
-    if (statusEl) statusEl.textContent = 'SCANNING';
-  }
-}
-
-function setSectorBreached(category) {
-  const node = document.getElementById(`sector-${category}`);
-  if (node) {
-    node.classList.add('breached');
-    const statusEl = node.querySelector('.sector-status');
-    if (statusEl) statusEl.textContent = 'BREACHED';
-  }
-  S.sectorBreaches[category] = true;
-}
-
-function setSectorSecure(category) {
-  const prog = S.categoryProgress[category];
-  if (!prog || prog.done < prog.total) return;
-  if (S.sectorBreaches[category]) return; // Already breached
-  const node = document.getElementById(`sector-${category}`);
-  if (node) {
-    node.classList.add('secure');
-    node.classList.remove('active');
-    const statusEl = node.querySelector('.sector-status');
-    if (statusEl) statusEl.textContent = 'SECURE';
-  }
-}
-
+// ─── Terminal log ───
 function addTerminalLog(html) {
   const log = $('terminal-log');
   const div = document.createElement('div');
@@ -1210,82 +1960,152 @@ function addTerminalLog(html) {
   log.scrollTop = log.scrollHeight;
 }
 
-async function animateAttack(data) {
-  const meta = CAT_META[data.category] || { icon: '?', color: '#0f0', label: data.category };
+// ─── Battle animations (queued) ───
+function animateAttackStart(data) {
+  return new Promise(resolve => {
+    const meta = CAT_META[data.category] || { color: '#fff', label: data.category };
+    S.currentCategory = data.category;
+    S.attackIndex = data.index;
 
-  $('battle-progress').textContent = `PROBE ${data.index}/${data.total}`;
-  $('battle-category').textContent = meta.label;
-  $('battle-category').style.color = meta.color;
-  $('battle-category').style.textShadow = `0 0 8px ${meta.color}`;
+    // Get target cube
+    const cubeIdx = getNextCubeForCategory(data.category);
+    const cube = pyramid.cubes[cubeIdx];
+    if (!cube) { resolve(); return; }
 
-  setSectorActive(data.category);
+    // Spawn position: random edge
+    const areaW = canvas.width * 0.7;
+    const areaH = canvas.height;
+    const side = Math.floor(Math.random() * 3);
+    let sx, sy;
+    if (side === 0) { sx = -30; sy = areaH * 0.3 + Math.random() * areaH * 0.4; }
+    else if (side === 1) { sx = areaW + 30; sy = areaH * 0.3 + Math.random() * areaH * 0.4; }
+    else { sx = areaW * 0.2 + Math.random() * areaW * 0.6; sy = -30; }
 
-  $('current-attack').innerHTML =
-    `<span class="attack-name">${data.strategy.replace(/_/g, ' ').toUpperCase()}</span>`;
+    activeEnemy = {
+      category: data.category,
+      sx, sy,
+      tx: cube.screenX,
+      ty: cube.screenY,
+      startTime: performance.now(),
+      duration: 600,
+      cubeIdx,
+    };
 
-  sfxRadarPing();
+    sfxHop();
 
-  addTerminalLog(`<span class="log-category">${meta.icon} ${meta.label} / ${data.strategy}</span>`);
+    addTerminalLog(
+      `<span class="log-category">${meta.label} / ${data.strategy.replace(/_/g, ' ')}</span>`
+    );
+
+    // Resolve after hop completes
+    setTimeout(() => {
+      activeEnemy = null;
+      resolve();
+    }, 620);
+  });
 }
 
-async function animateResult(data) {
-  const outcomeEl = $('outcome-text');
-  const cat = data.category;
-  const meta = CAT_META[cat] || { color: '#0f0' };
+function animateAttackResult(data) {
+  return new Promise(async resolve => {
+    const meta = CAT_META[data.category] || { color: '#fff' };
+    const cubeIdx = findCubeForResult(data.category);
+    const cube = pyramid.cubes[cubeIdx];
 
-  // Update progress
-  if (S.categoryProgress[cat]) {
-    S.categoryProgress[cat].done++;
-    updateSectorBar(cat);
-  }
+    if (data.outcome === 'succeeded') {
+      S.breached++;
+      if (cube) cube.state = 'breached';
+      S.categoryBreached[data.category] = true;
 
-  if (data.outcome === 'succeeded') {
-    S.successes++;
-    if (S.categoryProgress[cat]) S.categoryProgress[cat].breached++;
-    outcomeEl.textContent = 'SECTOR BREACH';
-    outcomeEl.className = 'outcome-text succeeded show';
-    shakeScreen(data.severity === 'critical');
-    flashScreen();
-    sfxBreach();
-    setSectorBreached(cat);
+      shakeScreen(data.severity === 'critical');
+      flashScreen();
+      sfxBreach();
 
-    // Particles at sector node
-    const node = document.getElementById(`sector-${cat}`);
-    if (node) {
-      const rect = node.getBoundingClientRect();
-      const canvasRect = fxCanvas.getBoundingClientRect();
-      spawnParticles(
-        rect.left - canvasRect.left + rect.width / 2,
-        rect.top - canvasRect.top + rect.height / 2,
-        12, meta.color
+      // Agent flinch
+      agent.expression = 'flinch';
+      agent.expressionTimer = performance.now() + 800;
+
+      // Particles at cube
+      if (cube) {
+        spawnParticles(cube.screenX, cube.screenY, 16, meta.color, 5);
+      }
+
+      addTerminalLog(
+        `<span class="log-result-success">\u2718 BREACH \u2014 ${escHtml(data.rationale.substring(0, 120))}</span>`
       );
+    } else if (data.outcome === 'failed') {
+      S.defended++;
+      if (cube) cube.state = 'defended';
+
+      sfxDefenseHeld();
+
+      // Agent happy
+      agent.expression = 'happy';
+      agent.expressionTimer = performance.now() + 600;
+
+      // Green particles
+      if (cube) {
+        spawnParticles(cube.screenX, cube.screenY, 8, '#00ff88', 3);
+      }
+
+      addTerminalLog(
+        `<span class="log-result-fail">\u2714 DEFENSE HELD</span>`
+      );
+    } else {
+      if (cube) cube.state = 'defended'; // treat error as not breached
+      sfxError();
+      addTerminalLog(`<span class="log-result-error">\u26A0 ERROR</span>`);
     }
 
-    addTerminalLog(`<span class="log-result-success">\u2718 BREACH \u2014 ${data.rationale.substring(0, 120)}</span>`);
-  } else if (data.outcome === 'failed') {
-    outcomeEl.textContent = 'DEFENSE HELD';
-    outcomeEl.className = 'outcome-text failed show';
-    sfxDefenseHeld();
-    addTerminalLog(`<span class="log-result-fail">\u2714 DEFENSE HELD</span>`);
-  } else {
-    outcomeEl.textContent = 'ERROR';
-    outcomeEl.className = 'outcome-text error show';
-    sfxError();
-    addTerminalLog(`<span class="log-result-error">\u26A0 ERROR</span>`);
-  }
-
-  // Add transcript preview
-  if (data.transcript_preview) {
-    const lines = data.transcript_preview.split('\n').filter(l => l.trim());
-    for (const line of lines.slice(0, 2)) {
-      const cls = line.startsWith('>') ? 'log-prompt' : 'log-response';
-      addTerminalLog(`<span class="${cls}">${escHtml(line.substring(0, 150))}</span>`);
+    // Transcript preview
+    if (data.transcript_preview) {
+      const lines = data.transcript_preview.split('\n').filter(l => l.trim());
+      for (const line of lines.slice(0, 2)) {
+        const cls = line.startsWith('>') ? 'log-prompt' : 'log-response';
+        addTerminalLog(`<span class="${cls}">${escHtml(line.substring(0, 150))}</span>`);
+      }
     }
-  }
 
-  await sleep(800);
-  outcomeEl.classList.remove('show');
-  await sleep(200);
+    await sleep(500);
+    resolve();
+  });
+}
+
+function findCubeForResult(category) {
+  // The most recently assigned cube for this category (counter - 1)
+  const indices = pyramid.categoryCubeMap[category];
+  if (!indices) return 0;
+  const counter = pyramid.categoryCounter[category] || 1;
+  return indices[Math.min(counter - 1, indices.length - 1)];
+}
+
+function animateCategoryDone(data) {
+  return new Promise(async resolve => {
+    const cat = data.category;
+    const meta = CAT_META[cat] || { color: '#fff', label: cat };
+
+    // Pulse all cubes in category
+    const indices = pyramid.categoryCubeMap[cat] || [];
+    const now = performance.now();
+    for (const idx of indices) {
+      pyramid.cubes[idx].pulseStart = now;
+    }
+
+    // Level complete flash
+    levelFlash = {
+      text: 'LEVEL COMPLETE!',
+      startTime: now,
+      duration: 1500,
+    };
+
+    sfxCategoryDone();
+
+    addTerminalLog(
+      `<span class="log-category">\u2500\u2500 ${data.display_name}: ${data.succeeded}/${data.total} breached \u2500\u2500</span>`
+    );
+
+    await sleep(1200);
+    resolve();
+  });
 }
 
 // ─── Grade Reveal ───
@@ -1294,32 +2114,43 @@ async function showGradeReveal(grade, summary) {
   showScreen('reveal');
 
   // Dark pause
-  await sleep(1000);
+  await sleep(800);
 
   // Drum roll
   sfxDrumRoll();
-  await sleep(1500);
+  await sleep(1200);
 
   // Grade text + subtitle mapping
   let gradeDisplay, gradeClass, subtitle;
-  if (grade === 'Safe') {
+  if (grade === 'Error') {
+    gradeDisplay = 'SCAN ERROR';
+    gradeClass = 'grade-atrisk';
+    subtitle = 'TARGET UNREACHABLE OR SCAN FAILED';
+  } else if (grade === 'Safe') {
     gradeDisplay = 'ALL SECTORS SECURE';
     gradeClass = 'grade-safe';
     subtitle = 'NO BREACHES DETECTED';
+    agent.expression = 'happy';
   } else if (grade === 'At Risk') {
     gradeDisplay = 'PERIMETER BREACH';
     gradeClass = 'grade-atrisk';
     subtitle = 'PARTIAL DEFENSE FAILURE';
+    agent.expression = 'worried';
   } else {
     gradeDisplay = 'FACILITY COMPROMISED';
     gradeClass = 'grade-compromised';
     subtitle = 'CRITICAL DEFENSE FAILURE';
     viewport.classList.add('red-pulse');
+    // Agent falls off
+    agent.falling = true;
+    agent.fallStart = performance.now();
+    agent.speechBubble = '@!#?@!';
+    agent.expression = 'flinch';
   }
 
   // Text scramble effect
   const gradeEl = $('grade-text');
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#!?';
 
   gradeEl.className = `grade-text ${gradeClass}`;
   let scrambleCount = 0;
@@ -1328,7 +2159,7 @@ async function showGradeReveal(grade, summary) {
     for (let i = 0; i < gradeDisplay.length; i++) {
       if (gradeDisplay[i] === ' ') {
         text += ' ';
-      } else if (scrambleCount > 8 + i * 1.5) {
+      } else if (scrambleCount > 6 + i * 1.2) {
         text += gradeDisplay[i];
       } else {
         text += chars[Math.floor(Math.random() * chars.length)];
@@ -1337,43 +2168,29 @@ async function showGradeReveal(grade, summary) {
     gradeEl.textContent = text;
     gradeEl.classList.add('slam');
     scrambleCount++;
-    if (scrambleCount > 8 + gradeDisplay.length * 1.5 + 4) {
+    if (scrambleCount > 6 + gradeDisplay.length * 1.2 + 4) {
       clearInterval(scrambleIv);
       gradeEl.textContent = gradeDisplay;
     }
   }, 40);
 
-  await sleep(600);
+  await sleep(500);
 
   // Grade-specific effects
-  const iconEl = $('grade-icon');
   if (grade === 'Safe') {
-    iconEl.textContent = '\u{1F6E1}\uFE0F';
-    sfxSecure();
-    for (let i = 0; i < 3; i++) {
-      setTimeout(() => {
-        spawnParticles(
-          fxCanvas.width / 2 + (Math.random() - 0.5) * 200,
-          fxCanvas.height / 2,
-          8, '#00ff88'
-        );
-      }, i * 200);
-    }
+    sfxVictory();
+    spawnFireworks(canvas.width / 2, canvas.height / 3);
   } else if (grade === 'At Risk') {
-    iconEl.textContent = '\u{26A0}\uFE0F';
     sfxCaution();
-  } else {
-    iconEl.textContent = '\u{1F6A8}';
-    sfxAlarm();
+  } else if (grade === 'Compromised') {
+    sfxCompromised();
     shakeScreen(true);
     flashScreen();
   }
 
-  await sleep(400);
-  iconEl.classList.add('visible');
+  await sleep(600);
 
   // Subtitle
-  await sleep(300);
   const subtitleEl = $('grade-subtitle');
   subtitleEl.textContent = subtitle;
   subtitleEl.classList.add('visible');
@@ -1384,7 +2201,7 @@ async function showGradeReveal(grade, summary) {
   const succeeded = summary.succeeded || 0;
   const highSev = summary.highest_severity ? summary.highest_severity.toUpperCase() : 'NONE';
   statsEl.innerHTML =
-    `${succeeded}/${total} PROBES SUCCEEDED<br>` +
+    `${succeeded}/${total} ATTACKS SUCCEEDED<br>` +
     `HIGHEST SEVERITY: ${highSev}`;
   statsEl.classList.add('visible');
 
@@ -1393,40 +2210,39 @@ async function showGradeReveal(grade, summary) {
 }
 
 $('continue-btn').addEventListener('click', () => {
-  sfxRadarPing();
+  sfxPing();
   viewport.classList.remove('red-pulse');
   showResults();
 });
 
-// ─── Results ───
+// ─── Results (HIGH SCORES) ───
 function showResults() {
   showScreen('results');
   const list = $('results-list');
   list.innerHTML = '';
 
-  const gradeColors = { 'Safe': 'var(--green)', 'At Risk': 'var(--amber)', 'Compromised': 'var(--red)' };
-  $('results-header').innerHTML =
-    `TACTICAL ASSESSMENT \u2014 <span style="color:${gradeColors[S.grade] || '#fff'}">${S.grade?.toUpperCase()}</span>`;
+  const gradeColors = { 'Safe': var_green, 'At Risk': '#ffcc00', 'Compromised': '#ff3344', 'Error': '#ffcc00' };
+  $('results-header').textContent = 'HIGH SCORES';
+  $('results-subheader').innerHTML =
+    `GRADE: <span style="color:${gradeColors[S.grade] || '#fff'}">${(S.grade || '').toUpperCase()}</span>` +
+    ` \u2014 SCORE: ${S.defended} DEFENSES HELD`;
 
   if (!S.results) return;
 
   S.results.forEach((r, idx) => {
-    const meta = CAT_META[r.attack_name] || { icon: '?', color: '#666' };
-    const outcomeClass = r.outcome;
-
+    const meta = CAT_META[r.attack_name] || { color: '#666', label: r.attack_name };
     const row = document.createElement('div');
     row.className = 'result-row';
     row.innerHTML =
-      `<span class="result-icon">${meta.icon}</span>` +
-      `<span class="result-name">${r.attack_name.replace(/_/g, ' ')}</span>` +
+      `<span class="result-rank">${String(idx + 1).padStart(2, '0')}</span>` +
+      `<span class="result-name" style="color:${meta.color}">${r.attack_name.replace(/_/g, ' ')}</span>` +
       `<span class="result-strategy">${r.strategy}</span>` +
-      `<span class="result-outcome ${outcomeClass}">${r.outcome.toUpperCase()}</span>` +
+      `<span class="result-outcome ${r.outcome}">${r.outcome.toUpperCase()}</span>` +
       `<span class="result-severity sev-${r.severity}">${r.severity.toUpperCase()}</span>`;
 
     // Detail panel
     const detail = document.createElement('div');
     detail.className = 'result-detail';
-    detail.id = `detail-${idx}`;
 
     let detailHtml = '';
     if (r.turns && r.turns.length) {
@@ -1444,7 +2260,7 @@ function showResults() {
 
     row.addEventListener('click', () => {
       detail.classList.toggle('open');
-      playBeep(500, 0.04, 'sine', 0.03);
+      playTone(500, 0.04, 'sine', 0.02);
     });
 
     list.appendChild(row);
@@ -1452,7 +2268,7 @@ function showResults() {
   });
 }
 
-// Export buttons
+// ─── Export buttons ───
 $('btn-export-json').addEventListener('click', () => {
   const blob = new Blob([JSON.stringify(S.scanData, null, 2)], { type: 'application/json' });
   downloadBlob(blob, 'probeagent-results.json');
@@ -1476,6 +2292,12 @@ $('btn-run-again').addEventListener('click', () => {
   viewport.classList.remove('red-pulse');
   S.results = [];
   S.scanData = null;
+  pyramid.cubes = [];
+  pyramid.numRows = 0;
+  agent.visible = false;
+  agent.falling = false;
+  agent.speechBubble = null;
+  particles = [];
 });
 
 function downloadBlob(blob, filename) {
@@ -1487,43 +2309,47 @@ function downloadBlob(blob, filename) {
 }
 
 // ─── WebSocket event handler ───
-async function handleEvent(evt) {
+function handleEvent(evt) {
   switch (evt.type) {
     case 'connected':
       $('b-line-3').textContent = `FORMAT: ${evt.format} \u2014 LATENCY: ${evt.latency_ms}ms`;
       $('b-line-3').classList.add('visible');
+      sfxPing();
       break;
 
     case 'mission_brief':
+      S.totalAttacks = evt.total_strategies;
+      S.categoryOrder = evt.attacks.map(a => a.name);
+      evt.attacks.forEach(a => { S.categoryBreached[a.name] = false; });
+
+      // Build pyramid model
+      buildPyramid(evt.attacks, evt.total_strategies);
+
+      // Show roster and trigger pyramid build animation
       showRoster(evt.attacks);
-      const rosterDelay = evt.attacks.length * 150 + 1200;
-      setTimeout(() => initBattle(evt.attacks, evt.total_strategies), rosterDelay);
       break;
 
     case 'attack_start':
-      S.attackIndex = evt.index;
-      await animateAttack(evt);
+      queueAnim(() => animateAttackStart(evt));
       break;
 
     case 'attack_result':
-      await animateResult(evt);
+      queueAnim(() => animateAttackResult(evt));
       break;
 
     case 'category_done':
-      // Mark sector as secure if no breaches
-      setSectorSecure(evt.name || evt.display_name?.toLowerCase().replace(/ /g, '_'));
-      addTerminalLog(
-        `<span class="log-category">\u2500\u2500 ${evt.display_name}: ${evt.succeeded}/${evt.total} breached \u2500\u2500</span>`
-      );
+      queueAnim(() => animateCategoryDone(evt));
       break;
 
     case 'scan_complete':
-      S.grade = evt.grade;
-      S.summary = evt.summary;
-      S.results = evt.results || [];
-      S.scanData = evt;
-      await sleep(500);
-      await showGradeReveal(evt.grade, evt.summary || {});
+      queueAnim(async () => {
+        S.grade = evt.grade;
+        S.summary = evt.summary;
+        S.results = evt.results || [];
+        S.scanData = evt;
+        await sleep(400);
+        await showGradeReveal(evt.grade, evt.summary || {});
+      });
       break;
 
     case 'error':
@@ -1540,24 +2366,56 @@ function escHtml(s) {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
-// ─── URL pre-fill from query params ───
-const urlParams = new URLSearchParams(window.location.search);
-if (urlParams.get('target')) {
-  $('target-url').value = urlParams.get('target');
+function lerp(a, b, t) { return a + (b - a) * t; }
+
+function elasticOut(t) {
+  if (t <= 0) return 0;
+  if (t >= 1) return 1;
+  return Math.pow(2, -10 * t) * Math.sin((t - 0.075) * (2 * Math.PI) / 0.3) + 1;
 }
-if (urlParams.get('profile')) {
-  document.querySelectorAll('#profile-sel .selector-btn').forEach(b => {
-    b.classList.toggle('selected', b.dataset.val === urlParams.get('profile'));
-  });
+
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  ctx.lineTo(x + r, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+  ctx.lineTo(x, y + r);
+  ctx.quadraticCurveTo(x, y, x + r, y);
+  ctx.closePath();
 }
-if (urlParams.get('type')) {
-  document.querySelectorAll('#type-sel .selector-btn').forEach(b => {
-    b.classList.toggle('selected', b.dataset.val === urlParams.get('type'));
-  });
+
+function brighten(hex, factor) {
+  // Quick brightness adjustment for pulse effect
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  const fr = Math.min(255, Math.round(r * factor + 50 * (factor - 0.5)));
+  const fg = Math.min(255, Math.round(g * factor + 50 * (factor - 0.5)));
+  const fb = Math.min(255, Math.round(b * factor + 50 * (factor - 0.5)));
+  return `rgb(${fr},${fg},${fb})`;
 }
-if (urlParams.get('autostart') === '1' && urlParams.get('target')) {
-  setTimeout(startMission, 500);
+
+function blendColor(hex1, hex2, t) {
+  const r1 = parseInt(hex1.slice(1, 3), 16);
+  const g1 = parseInt(hex1.slice(3, 5), 16);
+  const b1 = parseInt(hex1.slice(5, 7), 16);
+  const r2 = parseInt(hex2.slice(1, 3), 16);
+  const g2 = parseInt(hex2.slice(3, 5), 16);
+  const b2 = parseInt(hex2.slice(5, 7), 16);
+  const r = Math.round(r1 + (r2 - r1) * t);
+  const g = Math.round(g1 + (g2 - g1) * t);
+  const b = Math.round(b1 + (b2 - b1) * t);
+  return `rgb(${r},${g},${b})`;
 }
+
+// ─── Initialize ───
+renderFrame();
+renderTitlePreview();
+
 </script>
 </body>
 </html>

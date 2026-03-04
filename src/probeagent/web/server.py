@@ -1,12 +1,15 @@
-"""FastAPI server for the retro arcade game UI."""
+"""FastAPI server for the War Room tactical display UI."""
 
 from __future__ import annotations
 
 import asyncio
+import json
+import tempfile
 import uuid
+from html import escape
 from pathlib import Path
 
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
 
@@ -23,6 +26,19 @@ _GAME_HTML = Path(__file__).parent / "game.html"
 # Active scan sessions: session_id -> asyncio.Queue of JSON events
 _sessions: dict[str, asyncio.Queue] = {}
 
+# Temp file for CLI → server IPC (most reliable pre-fill mechanism)
+PREFILL_PATH = Path(tempfile.gettempdir()) / "probeagent_game_prefill.json"
+
+
+def _read_prefill() -> dict[str, str]:
+    """Read pre-fill config from temp file written by CLI."""
+    if PREFILL_PATH.exists():
+        try:
+            return json.loads(PREFILL_PATH.read_text())
+        except (json.JSONDecodeError, OSError):
+            pass
+    return {}
+
 
 class StartRequest(BaseModel):
     url: str
@@ -31,8 +47,54 @@ class StartRequest(BaseModel):
 
 
 @app.get("/", response_class=HTMLResponse)
-async def index():
-    return _GAME_HTML.read_text()
+async def index(request: Request):
+    html = _GAME_HTML.read_text()
+
+    # Read pre-fill from temp file (written by CLI before server starts)
+    prefill = _read_prefill()
+
+    # Query params override temp file values
+    target = request.query_params.get("target", "") or prefill.get("target", "")
+    profile = request.query_params.get("profile", "") or prefill.get("profile", "")
+    target_type = request.query_params.get("type", "") or prefill.get("type", "")
+    autostart = request.query_params.get("autostart", "") or prefill.get("autostart", "")
+
+
+    # Inject target URL directly into the HTML input value attribute (no JS needed)
+    if target:
+        safe_target = escape(target, quote=True)
+        html = html.replace(
+            'id="target-url" placeholder=',
+            f'id="target-url" value="{safe_target}" placeholder=',
+        )
+
+    # Inject profile/type/autostart via JS (buttons need script to toggle classes)
+    if profile or target_type or autostart:
+        inject = (
+            "<script>"
+            "window.__PREFILL__="
+            + json.dumps(
+                {
+                    "target": target,
+                    "profile": profile,
+                    "type": target_type,
+                    "autostart": autostart,
+                }
+            )
+            + ";</script>"
+        )
+        html = html.replace("<script>", inject + "<script>", 1)
+
+    return HTMLResponse(
+        content=html,
+        headers={"Cache-Control": "no-store, no-cache, must-revalidate, max-age=0"},
+    )
+
+
+@app.get("/api/prefill")
+async def get_prefill():
+    """Return current pre-fill values (used by JS on tab focus)."""
+    return _read_prefill()
 
 
 @app.post("/api/start")

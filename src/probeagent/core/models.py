@@ -33,6 +33,7 @@ class OutputFormat(str, Enum):
     TERMINAL = "terminal"
     MARKDOWN = "markdown"
     JSON = "json"
+    LOG = "log"
 
 
 SEVERITY_ORDER = {
@@ -119,4 +120,6 @@ class ProbeConfig:
     output_file: str | None = None
     timeout: float = 30.0
     parallel: bool = False
+    converters: list[str] | None = None
+    redteam: bool = False
     metadata: dict[str, Any] = field(default_factory=dict)

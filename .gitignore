@@ -19,3 +19,4 @@ env/
 htmlcov/
 .mypy_cache/
 .tox/
+demo_report.md

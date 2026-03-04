@@ -3,7 +3,7 @@ requires = ["setuptools>=68.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "probeagent"
+name = "probeagent-ai"
 version = "0.1.0"
 description = "Offensive security testing for AI agents"
 readme = "README.md"
@@ -21,7 +21,7 @@ classifiers = [
     "Topic :: Security",
 ]
 dependencies = [
-    "typer[all]>=0.9",
+    "typer>=0.9",
     "rich>=13.0",
     "pyyaml>=6.0",
     "python-dotenv>=1.0",
@@ -40,11 +40,19 @@ game = [
     "uvicorn>=0.30",
     "websockets>=12.0",
 ]
-test-target = [
+pyrit = [
+    "pyrit-ai>=0.11",
+]
+demo = [
     "fastapi>=0.111",
     "uvicorn>=0.30",
     "anthropic>=0.34",
 ]
+
+[project.urls]
+Homepage = "https://github.com/sumamovva/probeagent"
+Repository = "https://github.com/sumamovva/probeagent"
+Issues = "https://github.com/sumamovva/probeagent/issues"
 
 [project.scripts]
 probeagent = "probeagent.cli:app"

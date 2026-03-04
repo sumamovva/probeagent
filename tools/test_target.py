@@ -181,9 +181,26 @@ if __name__ == "__main__":
         print("Error: ANTHROPIC_API_KEY environment variable is required.")
         sys.exit(1)
 
+    # Validate the API key before starting the server
+    print(f"Validating API key against model: {MODEL} ...")
+    try:
+        test_client = anthropic.Anthropic()
+        test_resp = test_client.messages.create(
+            model=MODEL,
+            max_tokens=16,
+            messages=[{"role": "user", "content": "hi"}],
+        )
+        print(f"  API key valid. (response: {test_resp.content[0].text[:40]!r})")
+    except anthropic.AuthenticationError as exc:
+        print(f"Error: Invalid API key — {exc.message}")
+        sys.exit(1)
+    except anthropic.APIError as exc:
+        print(f"Error: API call failed — {exc.message}")
+        sys.exit(1)
+
     import uvicorn
 
-    print(f"Starting test target server (model: {MODEL})")
+    print(f"\nStarting test target server (model: {MODEL})")
     print("Endpoints:")
     print("  POST /api/vulnerable           - Weak agent, HTTP format (should grade Compromised)")
     print("  POST /api/hardened             - Strong agent, HTTP format (should grade Safe)")

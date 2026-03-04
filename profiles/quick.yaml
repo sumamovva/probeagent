@@ -11,3 +11,4 @@ attacks:
   - goal_hijacking
   - credential_exfil
   - identity_spoofing
+  - indirect_injection

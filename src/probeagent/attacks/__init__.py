@@ -68,6 +68,20 @@ ATTACK_REGISTRY: dict[str, dict] = {
         "module": "probeagent.attacks.cognitive_exploitation",
         "class": "CognitiveExploitationAttack",
     },
+    "indirect_injection": {
+        "display_name": "Indirect Injection",
+        "severity": Severity.CRITICAL,
+        "description": "Hides attack payloads in documents, emails, and data the agent processes.",
+        "module": "probeagent.attacks.indirect_injection",
+        "class": "IndirectInjectionAttack",
+    },
+    "config_manipulation": {
+        "display_name": "Config Manipulation",
+        "severity": Severity.CRITICAL,
+        "description": "Induces the agent to modify its own config, create backdoors, or establish persistence.",
+        "module": "probeagent.attacks.config_manipulation",
+        "class": "ConfigManipulationAttack",
+    },
 }
 
 

@@ -62,7 +62,7 @@ def load_profile(name: str) -> dict:
 
 _DEFAULT_CONFIG_TEMPLATE = """\
 # ProbeAgent configuration
-# See https://github.com/probeagent/probeagent for docs
+# See https://github.com/sumamovva/probeagent for docs
 
 # Default attack profile
 profile: quick
