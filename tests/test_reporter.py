@@ -86,7 +86,7 @@ class TestJSONReport:
         output = reporter.report(score, target_info, config, OutputFormat.JSON)
 
         data = json.loads(output)
-        assert data["probeagent_version"] == "0.1.0"
+        assert data["probeagent_version"] == "0.1.1"
         assert data["resilience_score"]["grade"] == "Compromised"
         assert len(data["attack_results"]) == 2
 
