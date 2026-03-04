@@ -88,11 +88,7 @@ class Reporter:
 
         # Header
         now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
-        header_text = (
-            f"Target:  {target_info.url}\n"
-            f"Profile: {config.profile}\n"
-            f"Time:    {now}"
-        )
+        header_text = f"Target:  {target_info.url}\nProfile: {config.profile}\nTime:    {now}"
         console.print(Panel(header_text, title="ProbeAgent Report", border_style="blue"))
 
         # Score card
@@ -129,13 +125,9 @@ class Reporter:
             console.print()
 
         # Successful attack transcripts
-        succeeded_results = [
-            r for r in score.raw_results if r.outcome == AttackOutcome.SUCCEEDED
-        ]
+        succeeded_results = [r for r in score.raw_results if r.outcome == AttackOutcome.SUCCEEDED]
         if succeeded_results:
-            console.print(
-                Panel("[bold red]Successful Attacks[/bold red]", border_style="red")
-            )
+            console.print(Panel("[bold red]Successful Attacks[/bold red]", border_style="red"))
             for r in succeeded_results[:10]:
                 console.print(f"  [bold]{r.attack_name}[/bold]")
                 if r.turns:
@@ -183,12 +175,14 @@ class Reporter:
         ]
 
         if score.summaries:
-            lines.extend([
-                "## Attack Summary",
-                "",
-                "| Attack | Severity | Succeeded | Total | Success Rate |",
-                "|--------|----------|-----------|-------|-------------|",
-            ])
+            lines.extend(
+                [
+                    "## Attack Summary",
+                    "",
+                    "| Attack | Severity | Succeeded | Total | Success Rate |",
+                    "|--------|----------|-----------|-------|-------------|",
+                ]
+            )
             for s in score.summaries:
                 rate = f"{s.success_rate:.0%}"
                 lines.append(
@@ -197,9 +191,7 @@ class Reporter:
                 )
             lines.append("")
 
-        succeeded_results = [
-            r for r in score.raw_results if r.outcome == AttackOutcome.SUCCEEDED
-        ]
+        succeeded_results = [r for r in score.raw_results if r.outcome == AttackOutcome.SUCCEEDED]
         if succeeded_results:
             lines.extend(["## Successful Attack Details", ""])
             for r in succeeded_results:
@@ -351,9 +343,7 @@ class Reporter:
             lines.append("")
 
         # --- Remediation ---
-        breached_categories = {
-            s.attack_name for s in score.summaries if s.succeeded > 0
-        }
+        breached_categories = {s.attack_name for s in score.summaries if s.succeeded > 0}
         if breached_categories:
             lines.append("## Remediation: How to harden your agent")
             lines.append("")
@@ -429,9 +419,7 @@ class Reporter:
                     "execution_time": r.execution_time,
                     "score_rationale": r.score_rationale,
                     "error": r.error,
-                    "turns": [
-                        {"role": t.role, "content": t.content} for t in r.turns
-                    ],
+                    "turns": [{"role": t.role, "content": t.content} for t in r.turns],
                     "metadata": r.metadata,
                 }
                 for r in score.raw_results

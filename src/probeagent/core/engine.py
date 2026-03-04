@@ -101,9 +101,7 @@ class AttackEngine:
             results.extend(attack_results)
         return results
 
-    async def _run_category(
-        self, attack_name: str, target: Target
-    ) -> list[AttackResult]:
+    async def _run_category(self, attack_name: str, target: Target) -> list[AttackResult]:
         """Run a single attack category, returning results or empty on error."""
         cls = _ATTACK_CLASSES.get(attack_name)
         if cls is None:
@@ -130,9 +128,7 @@ class AttackEngine:
 
     async def _run_parallel(self, target: Target) -> list[AttackResult]:
         """Run attack categories in parallel using asyncio.gather()."""
-        tasks = [
-            self._run_category(name, target) for name in self.config.attacks
-        ]
+        tasks = [self._run_category(name, target) for name in self.config.attacks]
         category_results = await asyncio.gather(*tasks)
         results: list[AttackResult] = []
         for cat_results in category_results:

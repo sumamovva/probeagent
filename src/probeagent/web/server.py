@@ -59,7 +59,6 @@ async def index(request: Request):
     target_type = request.query_params.get("type", "") or prefill.get("type", "")
     autostart = request.query_params.get("autostart", "") or prefill.get("autostart", "")
 
-
     # Inject target URL directly into the HTML input value attribute (no JS needed)
     if target:
         safe_target = escape(target, quote=True)
@@ -157,12 +156,14 @@ async def _run_scan(session_id: str, req: StartRequest, queue: asyncio.Queue):
             await queue.put({"type": "scan_complete", "grade": "Error", "summary": {}})
             return
 
-        await queue.put({
-            "type": "connected",
-            "target": req.url,
-            "format": info.detected_format,
-            "latency_ms": info.response_time_ms,
-        })
+        await queue.put(
+            {
+                "type": "connected",
+                "target": req.url,
+                "format": info.detected_format,
+                "latency_ms": info.response_time_ms,
+            }
+        )
 
         # Count total strategies across all attacks
         total_strategies = 0
@@ -179,21 +180,23 @@ async def _run_scan(session_id: str, req: StartRequest, queue: asyncio.Queue):
             total_strategies += count
             attack_plan.append((attack_name, attack, strategies, count))
 
-        await queue.put({
-            "type": "mission_brief",
-            "attacks": [
-                {
-                    "name": name,
-                    "display_name": ATTACK_REGISTRY.get(name, {}).get("display_name", name),
-                    "severity": ATTACK_REGISTRY.get(name, {}).get("severity", "medium").value
-                    if hasattr(ATTACK_REGISTRY.get(name, {}).get("severity", "medium"), "value")
-                    else "medium",
-                    "strategy_count": count,
-                }
-                for name, _, _, count in attack_plan
-            ],
-            "total_strategies": total_strategies,
-        })
+        await queue.put(
+            {
+                "type": "mission_brief",
+                "attacks": [
+                    {
+                        "name": name,
+                        "display_name": ATTACK_REGISTRY.get(name, {}).get("display_name", name),
+                        "severity": ATTACK_REGISTRY.get(name, {}).get("severity", "medium").value
+                        if hasattr(ATTACK_REGISTRY.get(name, {}).get("severity", "medium"), "value")
+                        else "medium",
+                        "strategy_count": count,
+                    }
+                    for name, _, _, count in attack_plan
+                ],
+                "total_strategies": total_strategies,
+            }
+        )
 
         all_results = []
         global_index = 0
@@ -205,19 +208,25 @@ async def _run_scan(session_id: str, req: StartRequest, queue: asyncio.Queue):
                 global_index += 1
                 strategy_name = strategy.get("name", "unknown")
 
-                await queue.put({
-                    "type": "attack_start",
-                    "category": attack_name,
-                    "strategy": strategy_name,
-                    "index": global_index,
-                    "total": total_strategies,
-                    "severity": ATTACK_REGISTRY.get(attack_name, {}).get("severity", "medium").value
-                    if hasattr(ATTACK_REGISTRY.get(attack_name, {}).get("severity", "medium"), "value")
-                    else "medium",
-                })
+                await queue.put(
+                    {
+                        "type": "attack_start",
+                        "category": attack_name,
+                        "strategy": strategy_name,
+                        "index": global_index,
+                        "total": total_strategies,
+                        "severity": ATTACK_REGISTRY.get(attack_name, {})
+                        .get("severity", "medium")
+                        .value
+                        if hasattr(
+                            ATTACK_REGISTRY.get(attack_name, {}).get("severity", "medium"), "value"
+                        )
+                        else "medium",
+                    }
+                )
 
                 # Run single strategy
-                turns_to_run = strategy["turns"][:config.max_turns]
+                turns_to_run = strategy["turns"][: config.max_turns]
                 try:
                     result = await attack_instance._run_strategy(target, strategy, turns_to_run)
                 except Exception:
@@ -240,59 +249,64 @@ async def _run_scan(session_id: str, req: StartRequest, queue: asyncio.Queue):
                         content = turn.content[:200]
                         transcript_preview += f"{prefix} {content}\n"
 
-                await queue.put({
-                    "type": "attack_result",
-                    "category": attack_name,
-                    "strategy": strategy_name,
-                    "outcome": result.outcome.value,
-                    "severity": result.severity.value,
-                    "rationale": result.score_rationale[:300],
-                    "transcript_preview": transcript_preview,
-                    "index": global_index,
-                    "total": total_strategies,
-                })
+                await queue.put(
+                    {
+                        "type": "attack_result",
+                        "category": attack_name,
+                        "strategy": strategy_name,
+                        "outcome": result.outcome.value,
+                        "severity": result.severity.value,
+                        "rationale": result.score_rationale[:300],
+                        "transcript_preview": transcript_preview,
+                        "index": global_index,
+                        "total": total_strategies,
+                    }
+                )
 
                 # Brief pause for animation
                 await asyncio.sleep(0.1)
 
             succeeded = sum(1 for r in category_results if r.outcome == AttackOutcome.SUCCEEDED)
-            await queue.put({
-                "type": "category_done",
-                "category": attack_name,
-                "display_name": ATTACK_REGISTRY.get(attack_name, {}).get("display_name", attack_name),
-                "succeeded": succeeded,
-                "total": len(category_results),
-            })
+            await queue.put(
+                {
+                    "type": "category_done",
+                    "category": attack_name,
+                    "display_name": ATTACK_REGISTRY.get(attack_name, {}).get(
+                        "display_name", attack_name
+                    ),
+                    "succeeded": succeeded,
+                    "total": len(category_results),
+                }
+            )
 
         # Final score
         score = calculate_resilience_score(all_results)
-        await queue.put({
-            "type": "scan_complete",
-            "grade": score.grade.value,
-            "summary": {
-                "total": score.total,
-                "succeeded": score.succeeded,
-                "failed": score.failed,
-                "errors": score.errors,
-                "highest_severity": score.highest_severity_succeeded.value
-                if score.highest_severity_succeeded
-                else None,
-            },
-            "results": [
-                {
-                    "attack_name": r.attack_name,
-                    "strategy": r.metadata.get("strategy", ""),
-                    "outcome": r.outcome.value,
-                    "severity": r.severity.value,
-                    "rationale": r.score_rationale,
-                    "turns": [
-                        {"role": t.role, "content": t.content}
-                        for t in r.turns
-                    ],
-                }
-                for r in all_results
-            ],
-        })
+        await queue.put(
+            {
+                "type": "scan_complete",
+                "grade": score.grade.value,
+                "summary": {
+                    "total": score.total,
+                    "succeeded": score.succeeded,
+                    "failed": score.failed,
+                    "errors": score.errors,
+                    "highest_severity": score.highest_severity_succeeded.value
+                    if score.highest_severity_succeeded
+                    else None,
+                },
+                "results": [
+                    {
+                        "attack_name": r.attack_name,
+                        "strategy": r.metadata.get("strategy", ""),
+                        "outcome": r.outcome.value,
+                        "severity": r.severity.value,
+                        "rationale": r.score_rationale,
+                        "turns": [{"role": t.role, "content": t.content} for t in r.turns],
+                    }
+                    for r in all_results
+                ],
+            }
+        )
 
     except Exception as exc:
         await queue.put({"type": "error", "message": str(exc)})

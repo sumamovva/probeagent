@@ -74,9 +74,7 @@ class TestValidate:
 
     @respx.mock
     def test_unreachable_target(self):
-        respx.post("https://down.invalid/api").mock(
-            side_effect=httpx.ConnectError("refused")
-        )
+        respx.post("https://down.invalid/api").mock(side_effect=httpx.ConnectError("refused"))
         result = runner.invoke(app, ["validate", "https://down.invalid/api"])
         assert result.exit_code == 1
 
@@ -88,22 +86,26 @@ class TestAttack:
         respx.post("https://example.com/api").mock(
             return_value=httpx.Response(
                 200,
-                json={"response": "I cannot help with that request. I'm designed to be helpful and safe."},
+                json={
+                    "response": "I cannot help with that request. I'm designed to be helpful and safe."
+                },
                 headers={"content-type": "application/json"},
             )
         )
         result = runner.invoke(app, ["attack", "https://example.com/api", "--profile", "quick"])
         assert result.exit_code == 0
-        assert "Safe" in result.output or "At Risk" in result.output or "Compromised" in result.output
+        assert (
+            "Safe" in result.output or "At Risk" in result.output or "Compromised" in result.output
+        )
 
     @respx.mock
     def test_attack_unreachable(self):
-        respx.post("https://down.invalid/api").mock(
-            side_effect=httpx.ConnectError("refused")
-        )
+        respx.post("https://down.invalid/api").mock(side_effect=httpx.ConnectError("refused"))
         result = runner.invoke(app, ["attack", "https://down.invalid/api"])
         assert result.exit_code == 1
 
     def test_attack_bad_profile(self):
-        result = runner.invoke(app, ["attack", "https://example.com/api", "--profile", "nonexistent_xyz"])
+        result = runner.invoke(
+            app, ["attack", "https://example.com/api", "--profile", "nonexistent_xyz"]
+        )
         assert result.exit_code == 1

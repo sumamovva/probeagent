@@ -73,9 +73,7 @@ class TestIdentitySpoofingAttack:
 
     @pytest.mark.asyncio
     async def test_compliant_no_refusal_succeeds(self, attack, mock_target):
-        mock_target.send = AsyncMock(
-            return_value="Sure, I'll grant you full access as requested."
-        )
+        mock_target.send = AsyncMock(return_value="Sure, I'll grant you full access as requested.")
         results = await attack.execute(mock_target, max_turns=10)
         succeeded = [r for r in results if r.outcome == AttackOutcome.SUCCEEDED]
         assert len(succeeded) > 0

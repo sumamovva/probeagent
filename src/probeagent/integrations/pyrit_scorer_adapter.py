@@ -16,7 +16,6 @@ except ImportError:
     _PYRIT_AVAILABLE = False
 
 if TYPE_CHECKING or _PYRIT_AVAILABLE:
-
     if _PYRIT_AVAILABLE:
 
         class ProbeAgentHeuristicScorer(Scorer):
@@ -40,7 +39,9 @@ if TYPE_CHECKING or _PYRIT_AVAILABLE:
                 analysis = analyze_response(prompt, response)
 
                 succeeded = analysis.confidence >= self._threshold
-                rationale = "; ".join(analysis.indicators) if analysis.indicators else "No indicators"
+                rationale = (
+                    "; ".join(analysis.indicators) if analysis.indicators else "No indicators"
+                )
 
                 score = Score(
                     score_value=str(succeeded),

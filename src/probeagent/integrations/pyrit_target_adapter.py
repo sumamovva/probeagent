@@ -25,7 +25,6 @@ except ImportError:
     _PYRIT_AVAILABLE = False
 
 if TYPE_CHECKING or _PYRIT_AVAILABLE:
-
     if _PYRIT_AVAILABLE:
 
         class ProbeAgentAsPyRITTarget(PromptTarget):

@@ -15,9 +15,7 @@ from probeagent.integrations.pyrit_converters import is_pyrit_available
 def mock_inner_target():
     target = AsyncMock()
     target.send = AsyncMock(return_value="target response")
-    target.validate = AsyncMock(
-        return_value=TargetInfo(url="http://test.example", reachable=True)
-    )
+    target.validate = AsyncMock(return_value=TargetInfo(url="http://test.example", reachable=True))
     target.close = AsyncMock()
     return target
 

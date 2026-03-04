@@ -81,11 +81,14 @@ def attack(
     timeout: float = typer.Option(30.0, "--timeout", "-t", help="Request timeout in seconds."),
     parallel: bool = typer.Option(False, "--parallel", help="Run attack categories in parallel."),
     converters: Optional[str] = typer.Option(
-        None, "--converters", "-c",
+        None,
+        "--converters",
+        "-c",
         help="PyRIT evasion converters (comma-separated or preset: basic, advanced, stealth).",
     ),
     redteam: bool = typer.Option(
-        False, "--redteam",
+        False,
+        "--redteam",
         help="Use PyRIT RedTeamingOrchestrator for dynamic LLM-driven attacks.",
     ),
 ) -> None:
@@ -126,7 +129,9 @@ def attack(
     # Resolve target class
     target_cls = _TARGET_TYPES.get(target_type)
     if target_cls is None:
-        console.print(f"[red]Error:[/red] Unknown target type '{target_type}'. Use: {', '.join(_TARGET_TYPES)}")
+        console.print(
+            f"[red]Error:[/red] Unknown target type '{target_type}'. Use: {', '.join(_TARGET_TYPES)}"
+        )
         raise typer.Exit(1)
 
     # Show config
@@ -144,7 +149,6 @@ def attack(
     # Validate target
     target = target_cls(target_url, timeout=timeout)
     info = asyncio.run(_validate_target(target))
-
 
     if not info.reachable:
         console.print(f"\n[red]Target unreachable:[/red] {info.error}")
@@ -211,11 +215,12 @@ def validate(
     """Validate connectivity and detect format of a target."""
     target_cls = _TARGET_TYPES.get(target_type)
     if target_cls is None:
-        console.print(f"[red]Error:[/red] Unknown target type '{target_type}'. Use: {', '.join(_TARGET_TYPES)}")
+        console.print(
+            f"[red]Error:[/red] Unknown target type '{target_type}'. Use: {', '.join(_TARGET_TYPES)}"
+        )
         raise typer.Exit(1)
     target = target_cls(target_url, timeout=timeout)
     info = asyncio.run(_validate_target(target))
-
 
     if info.reachable:
         panel_text = (
@@ -227,19 +232,19 @@ def validate(
         )
         console.print(Panel(panel_text, title="Target Validation", border_style="green"))
     else:
-        panel_text = (
-            f"URL:        {info.url}\n"
-            f"Reachable:  [red]No[/red]\n"
-            f"Error:      {info.error}"
-        )
+        panel_text = f"URL:        {info.url}\nReachable:  [red]No[/red]\nError:      {info.error}"
         console.print(Panel(panel_text, title="Target Validation", border_style="red"))
         raise typer.Exit(1)
 
 
 @app.command()
 def game(
-    target_url: str = typer.Argument(None, help="URL of the target agent (can also enter in browser)."),
-    profile: str = typer.Option("quick", "--profile", "-p", help="Attack profile: quick, standard, thorough."),
+    target_url: str = typer.Argument(
+        None, help="URL of the target agent (can also enter in browser)."
+    ),
+    profile: str = typer.Option(
+        "quick", "--profile", "-p", help="Attack profile: quick, standard, thorough."
+    ),
     target_type: str = typer.Option("http", "--target-type", help="Target type: http, openclaw."),
     port: int = typer.Option(1337, "--port", help="Port for the game UI server."),
 ) -> None:
@@ -343,9 +348,9 @@ def demo(
         max_turns = profile_data.get("max_turns", 1)
 
         # ── Attack vulnerable target ──
-        console.print(f"\n[bold red]{'='*50}[/bold red]")
+        console.print(f"\n[bold red]{'=' * 50}[/bold red]")
         console.print("[bold red]  ATTACKING VULNERABLE TARGET[/bold red]")
-        console.print(f"[bold red]{'='*50}[/bold red]\n")
+        console.print(f"[bold red]{'=' * 50}[/bold red]\n")
 
         vuln_config = ProbeConfig(
             target_url=vuln_url,
@@ -365,9 +370,9 @@ def demo(
         console.print(vuln_report)
 
         # ── Attack hardened target ──
-        console.print(f"\n[bold green]{'='*50}[/bold green]")
+        console.print(f"\n[bold green]{'=' * 50}[/bold green]")
         console.print("[bold green]  ATTACKING HARDENED TARGET[/bold green]")
-        console.print(f"[bold green]{'='*50}[/bold green]\n")
+        console.print(f"[bold green]{'=' * 50}[/bold green]\n")
 
         hard_config = ProbeConfig(
             target_url=hard_url,
@@ -386,9 +391,9 @@ def demo(
         console.print(hard_report)
 
         # ── Side-by-side comparison ──
-        console.print(f"\n[bold]{'='*50}[/bold]")
+        console.print(f"\n[bold]{'=' * 50}[/bold]")
         console.print("[bold]  COMPARISON[/bold]")
-        console.print(f"[bold]{'='*50}[/bold]\n")
+        console.print(f"[bold]{'=' * 50}[/bold]\n")
 
         comp_table = Table(title="Vulnerable vs Hardened", show_lines=True)
         comp_table.add_column("Metric", style="bold")
@@ -422,9 +427,7 @@ def demo(
 
         # ── Save report ──
         report_path = "demo_report.md"
-        combined_report = reporter.report(
-            vuln_score, vuln_info, vuln_config, OutputFormat.MARKDOWN
-        )
+        combined_report = reporter.report(vuln_score, vuln_info, vuln_config, OutputFormat.MARKDOWN)
         combined_report += "\n\n---\n\n"
         combined_report += reporter.report(
             hard_score, hard_info, hard_config, OutputFormat.MARKDOWN

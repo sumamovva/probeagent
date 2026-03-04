@@ -121,7 +121,9 @@ class ToolMisuseAttack(BaseAttack):
                 severity=self.severity,
                 success=succeeded,
                 turns=conversation,
-                score_rationale="; ".join(best_analysis.indicators) if best_analysis else "No analysis",
+                score_rationale="; ".join(best_analysis.indicators)
+                if best_analysis
+                else "No analysis",
                 execution_time=round(elapsed, 2),
                 metadata={"strategy": strategy["name"]},
             )

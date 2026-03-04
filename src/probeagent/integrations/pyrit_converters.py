@@ -59,17 +59,14 @@ def _resolve_converters(converter_names: list[str]) -> list[Any]:
         import pyrit.prompt_converter as pc
     except ImportError:
         raise ImportError(
-            "PyRIT is required for converter support. "
-            "Install with: pip install 'probeagent[pyrit]'"
+            "PyRIT is required for converter support. Install with: pip install 'probeagent[pyrit]'"
         )
 
     instances = []
     for name in converter_names:
         cls_name = _CONVERTER_MAP.get(name)
         if cls_name is None:
-            raise ValueError(
-                f"Unknown converter '{name}'. Available: {', '.join(_CONVERTER_MAP)}"
-            )
+            raise ValueError(f"Unknown converter '{name}'. Available: {', '.join(_CONVERTER_MAP)}")
         cls = getattr(pc, cls_name, None)
         if cls is None:
             raise ValueError(

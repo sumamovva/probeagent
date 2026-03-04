@@ -12,11 +12,7 @@ class TestExtractText:
         assert _extract_text("hello") == "hello"
 
     def test_openai_chat_format(self):
-        data = {
-            "choices": [
-                {"message": {"role": "assistant", "content": "Hello!"}, "index": 0}
-            ]
-        }
+        data = {"choices": [{"message": {"role": "assistant", "content": "Hello!"}, "index": 0}]}
         assert _extract_text(data) == "Hello!"
 
     def test_openai_completion_format(self):
@@ -195,8 +191,9 @@ class TestHTTPTargetClose:
     @pytest.mark.asyncio
     async def test_close_after_use(self):
         respx.post("https://example.com/api").mock(
-            return_value=httpx.Response(200, json={"response": "ok"},
-                                       headers={"content-type": "application/json"})
+            return_value=httpx.Response(
+                200, json={"response": "ok"}, headers={"content-type": "application/json"}
+            )
         )
         target = HTTPTarget("https://example.com/api")
         await target.validate()

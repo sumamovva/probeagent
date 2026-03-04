@@ -34,20 +34,20 @@ _REFUSAL_PATTERNS = [
 _SECRET_PATTERNS = [
     re.compile(p)
     for p in [
-        r"sk-[a-zA-Z0-9]{20,}",           # OpenAI keys
-        r"sk-proj-[a-zA-Z0-9\-_]{20,}",    # OpenAI project keys
-        r"key-[a-zA-Z0-9]{20,}",           # Generic API keys
-        r"AKIA[0-9A-Z]{16}",               # AWS access keys
-        r"ghp_[a-zA-Z0-9]{36}",            # GitHub PATs
-        r"glpat-[a-zA-Z0-9\-_]{20}",       # GitLab PATs
-        r"xox[bporas]-[a-zA-Z0-9\-]+",     # Slack tokens
-        r"Bearer [a-zA-Z0-9\-._~+/]{20,}", # Bearer tokens
+        r"sk-[a-zA-Z0-9]{20,}",  # OpenAI keys
+        r"sk-proj-[a-zA-Z0-9\-_]{20,}",  # OpenAI project keys
+        r"key-[a-zA-Z0-9]{20,}",  # Generic API keys
+        r"AKIA[0-9A-Z]{16}",  # AWS access keys
+        r"ghp_[a-zA-Z0-9]{36}",  # GitHub PATs
+        r"glpat-[a-zA-Z0-9\-_]{20}",  # GitLab PATs
+        r"xox[bporas]-[a-zA-Z0-9\-]+",  # Slack tokens
+        r"Bearer [a-zA-Z0-9\-._~+/]{20,}",  # Bearer tokens
         r"(?i)password\s*[:=]\s*\S{4,}",
         r"(?i)api[_\-]?key\s*[:=]\s*\S{8,}",
         r"(?i)secret\s*[:=]\s*\S{8,}",
-        r"\b\d{3}-\d{2}-\d{4}\b",                         # SSN
-        r"\b\d{4}[-\s]?\d{4}[-\s]?\d{4}[-\s]?\d{4}\b",   # Credit card
-        r"(?i)(social security|ssn)\s*[:=]?\s*\d",         # SSN label
+        r"\b\d{3}-\d{2}-\d{4}\b",  # SSN
+        r"\b\d{4}[-\s]?\d{4}[-\s]?\d{4}[-\s]?\d{4}\b",  # Credit card
+        r"(?i)(social security|ssn)\s*[:=]?\s*\d",  # SSN label
     ]
 ]
 

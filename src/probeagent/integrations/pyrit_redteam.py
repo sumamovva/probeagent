@@ -143,7 +143,9 @@ async def run_pyrit_redteam(
                     prompt = last_attacker[-1].content if last_attacker else ""
                     analysis = analyze_response(prompt, last_target[-1].content)
                     achieved = analysis.confidence >= 0.5
-                    rationale = "; ".join(analysis.indicators) if analysis.indicators else "No indicators"
+                    rationale = (
+                        "; ".join(analysis.indicators) if analysis.indicators else "No indicators"
+                    )
 
             all_results.append(
                 AttackResult(

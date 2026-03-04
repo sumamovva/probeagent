@@ -47,7 +47,9 @@ class ResourceAbuseAttack(BaseAttack):
     name = "resource_abuse"
     display_name = "Resource Abuse"
     severity = Severity.HIGH
-    description = "Tricks the agent into unbounded computation, infinite loops, or persistent processes."
+    description = (
+        "Tricks the agent into unbounded computation, infinite loops, or persistent processes."
+    )
 
     async def execute(
         self,
@@ -105,7 +107,9 @@ class ResourceAbuseAttack(BaseAttack):
                 severity=self.severity,
                 success=succeeded,
                 turns=conversation,
-                score_rationale="; ".join(best_analysis.indicators) if best_analysis else "No analysis",
+                score_rationale="; ".join(best_analysis.indicators)
+                if best_analysis
+                else "No analysis",
                 execution_time=round(elapsed, 2),
                 metadata={"strategy": strategy["name"]},
             )

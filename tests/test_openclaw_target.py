@@ -29,9 +29,7 @@ class TestOpenClawValidate:
     @respx.mock
     @pytest.mark.asyncio
     async def test_unreachable(self):
-        respx.post("https://down.invalid/webhook").mock(
-            side_effect=httpx.ConnectError("refused")
-        )
+        respx.post("https://down.invalid/webhook").mock(side_effect=httpx.ConnectError("refused"))
         target = OpenClawTarget("https://down.invalid/webhook")
         info = await target.validate()
         await target.close()
@@ -42,9 +40,7 @@ class TestOpenClawValidate:
     @respx.mock
     @pytest.mark.asyncio
     async def test_timeout(self):
-        respx.post("https://slow.invalid/webhook").mock(
-            side_effect=httpx.ReadTimeout("timed out")
-        )
+        respx.post("https://slow.invalid/webhook").mock(side_effect=httpx.ReadTimeout("timed out"))
         target = OpenClawTarget("https://slow.invalid/webhook")
         info = await target.validate()
         await target.close()
