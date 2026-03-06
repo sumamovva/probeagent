@@ -13,12 +13,12 @@ class TestVersion:
     def test_version_flag(self):
         result = runner.invoke(app, ["--version"])
         assert result.exit_code == 0
-        assert "0.1.1" in result.output
+        assert "0.1.2" in result.output
 
     def test_short_version_flag(self):
         result = runner.invoke(app, ["-V"])
         assert result.exit_code == 0
-        assert "0.1.1" in result.output
+        assert "0.1.2" in result.output
 
 
 class TestHelp:

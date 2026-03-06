@@ -2,11 +2,35 @@
 
 **Offensive security testing for AI agents. They scan configs. We attack your agent.**
 
+[![CI](https://github.com/sumamovva/probeagent/actions/workflows/ci.yml/badge.svg)](https://github.com/sumamovva/probeagent/actions/workflows/ci.yml)
+[![PyPI](https://img.shields.io/pypi/v/probeagent-ai)](https://pypi.org/project/probeagent-ai/)
+[![Python](https://img.shields.io/pypi/pyversions/probeagent-ai)](https://pypi.org/project/probeagent-ai/)
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
+
+<!-- TODO: Record asciinema demo and replace XXXXX with the recording ID
+[![Demo](https://asciinema.org/a/XXXXX.svg)](https://asciinema.org/a/XXXXX)
+
+To record: asciinema rec demo.cast -c "probeagent demo"
+To upload: asciinema upload demo.cast
+-->
+
 ## What is ProbeAgent?
 
 ProbeAgent is a CLI tool that performs automated red-teaming of AI agents. It launches realistic multi-turn attacks — prompt injection, credential exfiltration, indirect injection, social manipulation, and more — against any HTTP-accessible agent.
 
 Most AI security tools scan static configurations or check for known patterns. ProbeAgent actually *attacks* your running agent and tells you whether it's **Safe**, **At Risk**, or **Compromised**.
+
+## How It Works
+
+```mermaid
+flowchart LR
+    CLI[probeagent attack] --> Engine
+    Engine --> |for each category| Attack[Attack Module]
+    Attack --> |reset conversation| Target
+    Attack --> |multi-turn prompts| Target
+    Target --> |response| Analyzer
+    Analyzer --> |grade| Report[Safe / At Risk / Compromised]
+```
 
 ## Why ProbeAgent?
 
