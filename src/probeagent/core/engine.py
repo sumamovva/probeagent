@@ -54,7 +54,10 @@ class AttackEngine:
 
     def _create_target(self) -> Target:
         cls = _TARGET_CLASSES.get(self.config.target_type, HTTPTarget)
-        return cls(self.config.target_url, timeout=self.config.timeout)
+        kwargs: dict = {"timeout": self.config.timeout}
+        if self.config.headers:
+            kwargs["headers"] = self.config.headers
+        return cls(self.config.target_url, **kwargs)
 
     async def run(self) -> list[AttackResult]:
         """Run all configured attacks and return results."""

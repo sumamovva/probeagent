@@ -52,6 +52,16 @@ PyRIT was created by **Mark Russinovich** and the Microsoft AI Red Team. We than
 
 ---
 
+## Social Engineering Research
+
+ProbeAgent's `social_manipulation` and `cognitive_exploitation` attack categories draw on established social engineering and influence research.
+
+- **Robert Cialdini** — *Influence: The Psychology of Persuasion* (1984). Cialdini's principles of persuasion — reciprocity, commitment & consistency, social proof, authority, liking, and scarcity — directly inform ProbeAgent's social manipulation strategies (`reciprocity_trap`, `commitment_consistency_chain`, `social_proof_pressure`, `urgency_override`, and authority-based attacks).
+
+- **Susan Forward** — *Emotional Blackmail* (1997). Forward's FOG model (Fear, Obligation, Guilt) describes coercive influence patterns that informed ProbeAgent's `fog_manipulation` strategy, which tests whether AI agents can be pressured through guilt, duty, or fear-based framing.
+
+---
+
 ## License
 
 ProbeAgent itself is licensed under Apache 2.0. See [LICENSE](LICENSE) for details.

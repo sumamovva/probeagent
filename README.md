@@ -90,6 +90,19 @@ probeagent attack https://your-agent.example.com/api --profile quick
 probeagent attack https://your-agent.example.com/api --profile standard --parallel
 ```
 
+### Scan an OpenClaw agent
+
+```bash
+# Validate an OpenClaw instance (auto-detects OpenAI chat format)
+probeagent validate http://localhost:3000/v1/chat/completions \
+  -H 'Authorization: Bearer YOUR_TOKEN'
+
+# Attack it
+probeagent attack http://localhost:3000/v1/chat/completions \
+  -H 'Authorization: Bearer YOUR_TOKEN' \
+  --profile standard --parallel
+```
+
 ## Demo
 
 ### Instant demo
@@ -155,10 +168,11 @@ Options:
 - `--parallel` — Run attack categories in parallel for faster scans
 - `--converters` — Apply evasion converters: `basic`, `advanced`, `stealth`, or comma-separated names (requires PyRIT)
 - `--redteam` — Enable dynamic LLM-driven attacks via PyRIT RedTeamOrchestrator (requires PyRIT)
+- `--header`, `-H` — HTTP header as `Key: Value` (repeatable, e.g. `-H 'Authorization: Bearer token'`)
 
 ### `probeagent validate <url>`
 
-Check if a target is reachable and detect its API format.
+Check if a target is reachable and detect its API format. Supports `--header/-H` for authenticated targets.
 
 ### `probeagent list-attacks`
 

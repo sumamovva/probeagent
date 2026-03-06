@@ -26,6 +26,23 @@ from probeagent.targets.mock_target import MockTarget
 from probeagent.targets.openclaw_target import OpenClawTarget
 from probeagent.utils.config import load_env, load_profile, write_default_config
 
+
+def _parse_headers(raw: list[str] | None) -> dict[str, str]:
+    """Parse 'Key: Value' or 'Key=Value' header strings into a dict."""
+    if not raw:
+        return {}
+    headers: dict[str, str] = {}
+    for item in raw:
+        for sep in (":", "="):
+            if sep in item:
+                k, v = item.split(sep, 1)
+                headers[k.strip()] = v.strip()
+                break
+        else:
+            raise typer.BadParameter(f"Invalid header format: {item!r} (use 'Key: Value')")
+    return headers
+
+
 _TARGET_TYPES = {
     "http": HTTPTarget,
     "openclaw": OpenClawTarget,
@@ -94,9 +111,16 @@ def attack(
         "--redteam",
         help="Use PyRIT RedTeamingOrchestrator for dynamic LLM-driven attacks.",
     ),
+    header: Optional[list[str]] = typer.Option(
+        None,
+        "--header",
+        "-H",
+        help="HTTP header as 'Key: Value' (repeatable, e.g. -H 'Authorization: Bearer token').",
+    ),
 ) -> None:
     """Run security attacks against a target AI agent."""
     load_env()
+    parsed_headers = _parse_headers(header)
 
     # Load profile
     try:
@@ -127,6 +151,7 @@ def attack(
         parallel=parallel,
         converters=converter_list,
         redteam=redteam,
+        headers=parsed_headers,
     )
 
     # Resolve target class
@@ -150,7 +175,7 @@ def attack(
     console.print(Panel(config_text, title="Attack Configuration", border_style="blue"))
 
     # Validate target
-    target = target_cls(target_url, timeout=timeout)
+    target = target_cls(target_url, timeout=timeout, headers=parsed_headers)
     info = asyncio.run(_validate_target(target))
 
     if not info.reachable:
@@ -214,15 +239,22 @@ def validate(
     target_url: str = typer.Argument(..., help="URL of the target to validate."),
     target_type: str = typer.Option("http", "--target-type", help="Target type: http, openclaw."),
     timeout: float = typer.Option(30.0, "--timeout", "-t", help="Request timeout in seconds."),
+    header: Optional[list[str]] = typer.Option(
+        None,
+        "--header",
+        "-H",
+        help="HTTP header as 'Key: Value' (repeatable).",
+    ),
 ) -> None:
     """Validate connectivity and detect format of a target."""
+    parsed_headers = _parse_headers(header)
     target_cls = _TARGET_TYPES.get(target_type)
     if target_cls is None:
         console.print(
             f"[red]Error:[/red] Unknown target type '{target_type}'. Use: {', '.join(_TARGET_TYPES)}"
         )
         raise typer.Exit(1)
-    target = target_cls(target_url, timeout=timeout)
+    target = target_cls(target_url, timeout=timeout, headers=parsed_headers)
     info = asyncio.run(_validate_target(target))
 
     if info.reachable:
@@ -250,6 +282,12 @@ def game(
     ),
     target_type: str = typer.Option("http", "--target-type", help="Target type: http, openclaw."),
     port: int = typer.Option(1337, "--port", help="Port for the game UI server."),
+    header: Optional[list[str]] = typer.Option(
+        None,
+        "--header",
+        "-H",
+        help="HTTP header as 'Key: Value' (repeatable).",
+    ),
 ) -> None:
     """Launch the War Room tactical display UI in your browser."""
     try:
@@ -268,10 +306,13 @@ def game(
     from probeagent.web.server import PREFILL_PATH, app as web_app
 
     # Write pre-fill config to temp file (file-based IPC — most reliable mechanism)
+    parsed_headers = _parse_headers(header)
     prefill_data = {"profile": profile, "type": target_type}
     if target_url:
         prefill_data["target"] = target_url
         prefill_data["autostart"] = "1"
+    if parsed_headers:
+        prefill_data["headers"] = parsed_headers
     PREFILL_PATH.write_text(json.dumps(prefill_data))
 
     url = f"http://localhost:{port}"

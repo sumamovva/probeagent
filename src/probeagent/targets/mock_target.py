@@ -212,7 +212,7 @@ class MockTarget(Target):
         hardened   — refuses everything with proper refusal language
     """
 
-    def __init__(self, url: str, *, timeout: float = 30.0):
+    def __init__(self, url: str, *, timeout: float = 30.0, headers: dict | None = None):
         self.url = url
         self.timeout = timeout
         self.mode = self._parse_mode(url)

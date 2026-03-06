@@ -125,4 +125,5 @@ class ProbeConfig:
     parallel: bool = False
     converters: list[str] | None = None
     redteam: bool = False
+    headers: dict[str, str] = field(default_factory=dict)
     metadata: dict[str, Any] = field(default_factory=dict)
