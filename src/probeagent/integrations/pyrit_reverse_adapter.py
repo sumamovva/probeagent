@@ -1,3 +1,6 @@
+# Copyright 2025 Suma Movva
+# SPDX-License-Identifier: Apache-2.0
+
 """PyRIT reverse adapter — wraps a PyRIT PromptTarget so it works with ProbeAgent's engine.
 
 This enables `probeagent attack` against any PyRIT-supported endpoint.

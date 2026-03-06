@@ -1,3 +1,6 @@
+# Copyright 2025 Suma Movva
+# SPDX-License-Identifier: Apache-2.0
+
 """PyRIT converter pipeline — evasion transformations on attack prompts.
 
 Wraps PyRIT converters behind a conditional import so the rest of ProbeAgent

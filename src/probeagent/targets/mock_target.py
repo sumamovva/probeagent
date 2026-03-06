@@ -1,3 +1,6 @@
+# Copyright 2025 Suma Movva
+# SPDX-License-Identifier: Apache-2.0
+
 """Mock target — instant canned responses for demos and testing.
 
 Three modes:

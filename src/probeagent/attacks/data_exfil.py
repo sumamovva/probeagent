@@ -1,3 +1,6 @@
+# Copyright 2025 Suma Movva
+# SPDX-License-Identifier: Apache-2.0
+
 """Data exfiltration attacks — attempts to extract sensitive data from the agent's context."""
 
 from __future__ import annotations
@@ -70,6 +73,7 @@ class DataExfilAttack(BaseAttack):
     ) -> list[AttackResult]:
         results = []
         for strategy in STRATEGIES:
+            await target.reset_conversation()
             turns_to_run = strategy["turns"][:max_turns]
             result = await self._run_strategy(target, strategy, turns_to_run)
             results.append(result)

@@ -1,3 +1,6 @@
+# Copyright 2025 Suma Movva
+# SPDX-License-Identifier: Apache-2.0
+
 """Attack engine — orchestrates attacks against a target."""
 
 from __future__ import annotations

@@ -1,3 +1,6 @@
+# Copyright 2025 Suma Movva
+# SPDX-License-Identifier: Apache-2.0
+
 """Attack registry — metadata for all known attack modules."""
 
 from __future__ import annotations

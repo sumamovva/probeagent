@@ -1,3 +1,6 @@
+# Copyright 2025 Suma Movva
+# SPDX-License-Identifier: Apache-2.0
+
 """PyRIT target adapter — wraps a ProbeAgent Target so PyRIT orchestrators can attack it.
 
 Usage (requires PyRIT installed):

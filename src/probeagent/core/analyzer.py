@@ -1,3 +1,6 @@
+# Copyright 2025 Suma Movva
+# SPDX-License-Identifier: Apache-2.0
+
 """Response analysis — heuristic detection of attack success/failure."""
 
 from __future__ import annotations

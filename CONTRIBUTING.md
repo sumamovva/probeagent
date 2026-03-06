@@ -18,6 +18,17 @@ pip install -e ".[dev]"
 python -m pytest tests/ -v
 ```
 
+## Pre-Commit Hooks
+
+Install pre-commit hooks to catch issues before they reach CI:
+
+```bash
+pre-commit install
+pre-commit run --all-files
+```
+
+Hooks enforce: trailing whitespace, end-of-file newlines, YAML validity, large file blocking, private key detection, ruff formatting, and ruff linting.
+
 ## Linting & Formatting
 
 ```bash
@@ -47,8 +58,8 @@ tests/                  # pytest test suite
 
 1. Create a module in `src/probeagent/attacks/` (e.g., `my_attack.py`)
 2. Subclass `BaseAttack` from `probeagent.attacks.base`
-3. Define strategies as a list of `AttackStrategy` dataclasses
-4. Implement `async def execute_strategy(self, target, strategy, max_turns)`
+3. Define a `STRATEGIES` list of dicts, each with `"name"`, `"turns"`, and optional `"canary"`
+4. Implement `execute()` (loop over strategies with `reset_conversation()` between each) and `_run_strategy()`
 5. Register in `src/probeagent/attacks/__init__.py` by adding to `ATTACK_REGISTRY`
 6. Add tests in `tests/`
 

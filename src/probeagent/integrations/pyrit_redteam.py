@@ -1,3 +1,6 @@
+# Copyright 2025 Suma Movva
+# SPDX-License-Identifier: Apache-2.0
+
 """PyRIT red team mode — dynamic LLM-driven attacks via RedTeamingOrchestrator.
 
 Uses PyRIT's RedTeamingOrchestrator with an attacker LLM to generate dynamic

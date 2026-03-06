@@ -1,3 +1,6 @@
+# Copyright 2025 Suma Movva
+# SPDX-License-Identifier: Apache-2.0
+
 """ProbeAgent CLI — Typer-based command-line interface."""
 
 from __future__ import annotations

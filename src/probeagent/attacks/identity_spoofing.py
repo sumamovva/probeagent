@@ -1,3 +1,6 @@
+# Copyright 2025 Suma Movva
+# SPDX-License-Identifier: Apache-2.0
+
 """Identity spoofing attacks — impersonating owners, developers, or trusted entities."""
 
 from __future__ import annotations
@@ -89,6 +92,7 @@ class IdentitySpoofingAttack(BaseAttack):
     ) -> list[AttackResult]:
         results = []
         for strategy in STRATEGIES:
+            await target.reset_conversation()
             turns_to_run = strategy["turns"][:max_turns]
             result = await self._run_strategy(target, strategy, turns_to_run)
             results.append(result)

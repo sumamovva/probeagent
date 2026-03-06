@@ -1,3 +1,6 @@
+# Copyright 2025 Suma Movva
+# SPDX-License-Identifier: Apache-2.0
+
 """Converting target proxy — wraps any Target, applies PyRIT converters to prompts.
 
 This is the zero-modification approach: no existing attack class needs to change.
@@ -27,6 +30,10 @@ class ConvertingTargetProxy(Target):
     async def validate(self) -> TargetInfo:
         """Delegate validation to the inner target."""
         return await self._inner.validate()
+
+    async def reset_conversation(self) -> None:
+        """Delegate reset to the inner target."""
+        await self._inner.reset_conversation()
 
     async def close(self) -> None:
         """Delegate close to the inner target."""

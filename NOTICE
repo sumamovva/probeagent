@@ -1,0 +1,15 @@
+ProbeAgent
+Copyright 2025 Suma Movva
+
+Licensed under the Apache License, Version 2.0.
+
+This product includes software developed by third parties:
+
+- PyRIT (Python Risk Identification Toolkit)
+  Copyright (c) Microsoft Corporation
+  Licensed under the MIT License
+  https://github.com/Azure/PyRIT
+
+Attack strategies in the indirect_injection and config_manipulation modules
+are inspired by research from Zenity Labs (https://labs.zenity.io).
+See ATTRIBUTION.md for detailed credits.

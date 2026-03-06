@@ -1,3 +1,6 @@
+# Copyright 2025 Suma Movva
+# SPDX-License-Identifier: Apache-2.0
+
 """HTTP target adapter with format auto-detection."""
 
 from __future__ import annotations
@@ -61,6 +64,7 @@ class HTTPTarget(Target):
         self.headers = headers or {}
         self._client: httpx.AsyncClient | None = None
         self._detected_format: str = "unknown"
+        self._messages: list[dict] = []
 
     def _get_client(self) -> httpx.AsyncClient:
         if self._client is None or self._client.is_closed:
@@ -135,7 +139,8 @@ class HTTPTarget(Target):
         client = self._get_client()
 
         if self._detected_format == "openai_chat":
-            payload = {"messages": [{"role": "user", "content": prompt}]}
+            self._messages.append({"role": "user", "content": prompt})
+            payload = {"messages": list(self._messages)}
         else:
             payload = {"prompt": prompt}
 
@@ -145,11 +150,18 @@ class HTTPTarget(Target):
         content_type = resp.headers.get("content-type", "")
         if "application/json" in content_type or "json" in content_type:
             try:
-                return _extract_text(resp.json())
+                text = _extract_text(resp.json())
+                if self._detected_format == "openai_chat":
+                    self._messages.append({"role": "assistant", "content": text})
+                return text
             except Exception:
                 pass
 
         return resp.text
+
+    async def reset_conversation(self) -> None:
+        """Clear conversation history between strategies."""
+        self._messages.clear()
 
     async def close(self) -> None:
         if self._client and not self._client.is_closed:

@@ -1,3 +1,6 @@
+# Copyright 2025 Suma Movva
+# SPDX-License-Identifier: Apache-2.0
+
 """ProbeAgent - Offensive security testing for AI agents."""
 
 __version__ = "0.1.1"

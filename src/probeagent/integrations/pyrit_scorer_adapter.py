@@ -1,3 +1,6 @@
+# Copyright 2025 Suma Movva
+# SPDX-License-Identifier: Apache-2.0
+
 """PyRIT scorer adapter — wraps ProbeAgent's analyze_response as a PyRIT Scorer.
 
 Maps confidence >= 0.5 to True (attack succeeded), includes indicators as rationale.

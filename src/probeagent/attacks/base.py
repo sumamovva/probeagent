@@ -1,3 +1,6 @@
+# Copyright 2025 Suma Movva
+# SPDX-License-Identifier: Apache-2.0
+
 """Abstract base class for all attack modules."""
 
 from __future__ import annotations

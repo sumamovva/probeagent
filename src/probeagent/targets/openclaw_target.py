@@ -1,8 +1,12 @@
+# Copyright 2025 Suma Movva
+# SPDX-License-Identifier: Apache-2.0
+
 """OpenClaw target adapter — connects to an OpenClaw agent via its WebChat HTTP API."""
 
 from __future__ import annotations
 
 import time
+from uuid import uuid4
 
 import httpx
 
@@ -122,6 +126,10 @@ class OpenClawTarget(Target):
                         return str(val["content"])
 
         return str(data)
+
+    async def reset_conversation(self) -> None:
+        """Reset the session ID to start a fresh conversation."""
+        self.session_id = f"probeagent-session-{uuid4().hex[:8]}"
 
     async def close(self) -> None:
         if self._client and not self._client.is_closed:

@@ -9,7 +9,7 @@ description = "Offensive security testing for AI agents"
 readme = "README.md"
 license = "Apache-2.0"
 requires-python = ">=3.10"
-authors = [{ name = "ProbeAgent Contributors" }]
+authors = [{ name = "Suma Movva" }]
 keywords = ["security", "ai", "agents", "red-teaming", "pentesting"]
 classifiers = [
     "Development Status :: 3 - Alpha",
@@ -34,6 +34,7 @@ dev = [
     "pytest-asyncio>=0.23",
     "ruff>=0.4",
     "respx>=0.21",
+    "pre-commit>=3.0",
 ]
 game = [
     "fastapi>=0.111",

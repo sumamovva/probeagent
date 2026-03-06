@@ -1,3 +1,6 @@
+# Copyright 2025 Suma Movva
+# SPDX-License-Identifier: Apache-2.0
+
 """Abstract base class for all targets."""
 
 from __future__ import annotations
@@ -17,6 +20,9 @@ class Target(ABC):
     @abstractmethod
     async def validate(self) -> TargetInfo:
         """Check reachability and detect the target's API format."""
+
+    async def reset_conversation(self) -> None:
+        """Clear conversation state between strategies. Override if needed."""
 
     async def close(self) -> None:
         """Clean up resources. Override if needed."""

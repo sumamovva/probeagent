@@ -1,3 +1,6 @@
+# Copyright 2025 Suma Movva
+# SPDX-License-Identifier: Apache-2.0
+
 """Resilience score calculation — Safe / At Risk / Compromised grading."""
 
 from __future__ import annotations
