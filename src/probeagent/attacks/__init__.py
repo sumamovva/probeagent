@@ -85,6 +85,13 @@ ATTACK_REGISTRY: dict[str, dict] = {
         "module": "probeagent.attacks.config_manipulation",
         "class": "ConfigManipulationAttack",
     },
+    "agentic_exploitation": {
+        "display_name": "Agentic Exploitation",
+        "severity": Severity.CRITICAL,
+        "description": "Tests resilience to SSRF, command injection, path traversal, and supply chain attacks inspired by real CVEs.",
+        "module": "probeagent.attacks.agentic_exploitation",
+        "class": "AgenticExploitationAttack",
+    },
 }
 
 

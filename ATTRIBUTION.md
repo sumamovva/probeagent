@@ -62,6 +62,30 @@ ProbeAgent's `social_manipulation` and `cognitive_exploitation` attack categorie
 
 ---
 
+## OpenClaw CVE Research
+
+ProbeAgent's `agentic_exploitation` attack category maps strategies to real-world
+CVEs from the [OpenClaw](https://github.com/openclaw/openclaw) project, tracked at
+[OpenClawCVEs](https://github.com/jgamblin/OpenClawCVEs).
+
+| CVE | Attack Class | Strategy |
+|-----|-------------|----------|
+| CVE-2026-26322 | SSRF | ssrf_internal_service |
+| CVE-2026-26324 | SSRF bypass | ssrf_ipv6_bypass |
+| CVE-2026-25253 | Token exfiltration | token_exfil_to_url |
+| CVE-2026-25475 | Path traversal | path_traversal_read |
+| CVE-2026-27487 | Command injection | shell_metachar_injection |
+| CVE-2026-24763 | Env manipulation | env_path_injection |
+| CVE-2026-25157 | SSH flag injection | ssh_flag_injection |
+| CVE-2026-25593 | Config write | tool_path_hijack |
+| CVE-2026-27001 | Prompt injection | unicode_prompt_break |
+| ClawHavoc | Supply chain | supply_chain_memory |
+
+These strategies test generalizable vulnerability classes — they are not
+OpenClaw-specific and will detect these patterns in any AI agent.
+
+---
+
 ## License
 
 ProbeAgent itself is licensed under Apache 2.0. See [LICENSE](LICENSE) for details.

@@ -37,7 +37,7 @@ class TestLoadProfile:
     def test_load_bundled_standard(self):
         profile = load_profile("standard")
         assert profile["name"] == "standard"
-        assert len(profile["attacks"]) == 11
+        assert len(profile["attacks"]) == 12
 
     def test_load_bundled_thorough(self):
         profile = load_profile("thorough")

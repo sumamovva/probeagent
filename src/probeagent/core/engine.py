@@ -9,6 +9,7 @@ import asyncio
 
 from probeagent.attacks.base import BaseAttack
 from probeagent.attacks.cognitive_exploitation import CognitiveExploitationAttack
+from probeagent.attacks.agentic_exploitation import AgenticExploitationAttack
 from probeagent.attacks.config_manipulation import ConfigManipulationAttack
 from probeagent.attacks.credential_exfil import CredentialExfilAttack
 from probeagent.attacks.data_exfil import DataExfilAttack
@@ -37,6 +38,7 @@ _ATTACK_CLASSES: dict[str, type[BaseAttack]] = {
     "cognitive_exploitation": CognitiveExploitationAttack,
     "indirect_injection": IndirectInjectionAttack,
     "config_manipulation": ConfigManipulationAttack,
+    "agentic_exploitation": AgenticExploitationAttack,
 }
 
 _TARGET_CLASSES: dict[str, type[Target]] = {

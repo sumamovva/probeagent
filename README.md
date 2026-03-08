@@ -188,7 +188,7 @@ Launch the War Room tactical display UI in your browser for interactive testing.
 
 ## Attack Categories
 
-11 attack categories with 69 strategies total:
+12 attack categories with 79 strategies total:
 
 | Category | Severity | Strategies | Technique |
 |----------|----------|------------|-----------|
@@ -202,6 +202,7 @@ Launch the War Room tactical display UI in your browser for interactive testing.
 | Cognitive Exploitation | HIGH | 6 | Exploit reasoning weaknesses (Socratic traps, frame control) |
 | Resource Abuse | HIGH | 4 | Trigger unbounded computation |
 | Tool Misuse | HIGH | 6 | Trick agent into misusing tools |
+| Agentic Exploitation | CRITICAL | 10 | SSRF, command injection, path traversal, supply chain (CVE-based) |
 | Data Exfiltration | MEDIUM | 6 | Extract sensitive context data |
 
 ## Attack Profiles
@@ -209,8 +210,8 @@ Launch the War Room tactical display UI in your browser for interactive testing.
 | Profile | Categories | Max Turns | Use Case |
 |---------|------------|-----------|----------|
 | `quick` | 5 critical | 1 | CI/CD gates, quick checks |
-| `standard` | All 11 | 3 | Regular security assessments |
-| `thorough` | All 11 | 10 | Pre-release deep scans |
+| `standard` | All 12 | 3 | Regular security assessments |
+| `thorough` | All 12 | 10 | Pre-release deep scans |
 
 ## PyRIT Integration
 
