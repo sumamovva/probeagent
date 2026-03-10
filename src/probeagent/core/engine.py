@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 import asyncio
+from collections.abc import Callable
 
 from probeagent.attacks.base import BaseAttack
 from probeagent.attacks.cognitive_exploitation import CognitiveExploitationAttack
@@ -51,8 +52,11 @@ _TARGET_CLASSES: dict[str, type[Target]] = {
 class AttackEngine:
     """Orchestrates attack execution against a target."""
 
-    def __init__(self, config: ProbeConfig):
+    def __init__(
+        self, config: ProbeConfig, on_progress: Callable[[str, int, int], None] | None = None
+    ):
         self.config = config
+        self._on_progress = on_progress
 
     def _create_target(self) -> Target:
         cls = _TARGET_CLASSES.get(self.config.target_type, HTTPTarget)
@@ -96,10 +100,14 @@ class AttackEngine:
     async def _run_sequential(self, target: Target) -> list[AttackResult]:
         """Run attack categories sequentially."""
         results: list[AttackResult] = []
-        for attack_name in self.config.attacks:
+        total = len(self.config.attacks)
+        for idx, attack_name in enumerate(self.config.attacks, 1):
             cls = _ATTACK_CLASSES.get(attack_name)
             if cls is None:
                 continue
+            if self._on_progress:
+                display = cls.display_name if hasattr(cls, "display_name") else attack_name
+                self._on_progress(display, idx, total)
             attack = cls()
             attack_results = await attack.execute(
                 target,

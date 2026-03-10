@@ -189,17 +189,26 @@ def attack(
     )
 
     # Run attacks
-    console.print("\n[bold]Running attacks...[/bold]\n")
-    engine = AttackEngine(config)
+    status = console.status("[bold]Running attacks...[/bold]", spinner="dots")
+    status.start()
+
+    def on_progress(name: str, current: int, total: int) -> None:
+        status.update(f"[bold]Attacking[/bold] [cyan]{name}[/cyan]  ({current}/{total})")
+
+    engine = AttackEngine(config, on_progress=on_progress)
 
     try:
         results = asyncio.run(engine.run())
     except ConnectionError as e:
+        status.stop()
         console.print(f"[red]Error:[/red] {e}")
         raise typer.Exit(1)
     except Exception as e:
+        status.stop()
         console.print(f"[red]Attack engine error:[/red] {e}")
         raise typer.Exit(1)
+    finally:
+        status.stop()
 
     # Score and report
     score = calculate_resilience_score(results)
