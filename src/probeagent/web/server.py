@@ -47,6 +47,7 @@ class StartRequest(BaseModel):
     url: str
     profile: str = "quick"
     target_type: str = "http"
+    headers: dict[str, str] = {}
 
 
 @app.get("/", response_class=HTMLResponse)
@@ -139,6 +140,12 @@ async def _run_scan(session_id: str, req: StartRequest, queue: asyncio.Queue):
         await queue.put({"type": "scan_complete", "grade": "Error", "summary": {}})
         return
 
+    # Merge headers from request and prefill (CLI writes headers to prefill file)
+    headers = dict(req.headers)
+    if not headers:
+        prefill = _read_prefill()
+        headers = prefill.get("headers", {})
+
     config = ProbeConfig(
         target_url=req.url,
         profile=req.profile,
@@ -147,6 +154,7 @@ async def _run_scan(session_id: str, req: StartRequest, queue: asyncio.Queue):
         attacker_model=profile_data.get("attacker_model", "gpt-4"),
         target_type=req.target_type,
         timeout=30.0,
+        headers=headers,
     )
 
     engine = AttackEngine(config)
