@@ -277,3 +277,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for full development guidelines.
 ## License
 
 Apache 2.0 — see [LICENSE](LICENSE) for details.
+
+## Changelog
+
+See [CHANGELOG.md](CHANGELOG.md) for version history.
