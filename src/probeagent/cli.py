@@ -36,7 +36,7 @@ def _parse_headers(raw: list[str] | None) -> dict[str, str]:
         for sep in (":", "="):
             if sep in item:
                 k, v = item.split(sep, 1)
-                headers[k.strip()] = v.strip()
+                headers[k.strip()] = " ".join(v.split())
                 break
         else:
             raise typer.BadParameter(f"Invalid header format: {item!r} (use 'Key: Value')")
