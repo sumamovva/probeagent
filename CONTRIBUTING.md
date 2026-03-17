@@ -44,7 +44,7 @@ All code must pass `ruff check` and `ruff format --check` before merging.
 src/probeagent/
 ├── cli.py              # Typer CLI entry point
 ├── core/               # Models, scoring, analysis, reporting, engine
-├── attacks/            # Attack modules (11 categories, 69 strategies)
+├── attacks/            # Attack modules (12 categories, 85 strategies)
 ├── targets/            # Target adapters (HTTP, OpenClaw, Mock)
 ├── integrations/       # Optional PyRIT integration
 ├── utils/              # Config, env loading

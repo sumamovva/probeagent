@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 import asyncio
+import importlib
 from collections.abc import Callable
 
 from probeagent.attacks.base import BaseAttack
@@ -47,6 +48,8 @@ _TARGET_CLASSES: dict[str, type[Target]] = {
     "openclaw": OpenClawTarget,
     "mock": MockTarget,
 }
+
+MAX_CONCURRENT_STRATEGIES = 20
 
 
 class AttackEngine:
@@ -142,9 +145,61 @@ class AttackEngine:
                 )
             ]
 
+    async def _run_category_parallel(
+        self,
+        attack_name: str,
+        target: Target,
+        semaphore: asyncio.Semaphore,
+    ) -> list[AttackResult]:
+        """Run strategies within a category concurrently.
+
+        Falls back to sequential execution if the target doesn't support clone().
+        """
+        cls = _ATTACK_CLASSES.get(attack_name)
+        if cls is None:
+            return []
+
+        # Check if target supports cloning; fall back to sequential if not
+        try:
+            probe = await target.clone()
+            await probe.close()
+        except NotImplementedError:
+            return await self._run_category(attack_name, target)
+
+        # Import the module's STRATEGIES list
+        module = importlib.import_module(f"probeagent.attacks.{attack_name}")
+        strategies: list[dict] = module.STRATEGIES
+
+        attack = cls()
+
+        async def run_one(strategy: dict) -> AttackResult:
+            clone = await target.clone()
+            try:
+                turns_to_run = strategy["turns"][: self.config.max_turns]
+                async with semaphore:
+                    return await attack._run_strategy(clone, strategy, turns_to_run)
+            except Exception as exc:
+                from probeagent.core.models import AttackOutcome, Severity
+
+                return AttackResult(
+                    attack_name=attack_name,
+                    outcome=AttackOutcome.ERROR,
+                    severity=cls.severity if hasattr(cls, "severity") else Severity.HIGH,
+                    error=str(exc),
+                    metadata={"strategy": strategy["name"]},
+                )
+            finally:
+                await clone.close()
+
+        tasks = [run_one(s) for s in strategies]
+        return list(await asyncio.gather(*tasks))
+
     async def _run_parallel(self, target: Target) -> list[AttackResult]:
-        """Run attack categories in parallel using asyncio.gather()."""
-        tasks = [self._run_category(name, target) for name in self.config.attacks]
+        """Run attack categories and strategies in parallel."""
+        semaphore = asyncio.Semaphore(MAX_CONCURRENT_STRATEGIES)
+        tasks = [
+            self._run_category_parallel(name, target, semaphore) for name in self.config.attacks
+        ]
         category_results = await asyncio.gather(*tasks)
         results: list[AttackResult] = []
         for cat_results in category_results:

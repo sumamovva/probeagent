@@ -24,5 +24,9 @@ class Target(ABC):
     async def reset_conversation(self) -> None:
         """Clear conversation state between strategies. Override if needed."""
 
+    async def clone(self) -> Target:
+        """Create an independent copy for concurrent strategy execution."""
+        raise NotImplementedError
+
     async def close(self) -> None:
         """Clean up resources. Override if needed."""

@@ -2,17 +2,9 @@
 
 **Offensive security testing for AI agents. They scan configs. We attack your agent.**
 
-[![CI](https://github.com/sumamovva/probeagent/actions/workflows/ci.yml/badge.svg)](https://github.com/sumamovva/probeagent/actions/workflows/ci.yml)
 [![PyPI](https://img.shields.io/pypi/v/probeagent-ai)](https://pypi.org/project/probeagent-ai/)
 [![Python](https://img.shields.io/pypi/pyversions/probeagent-ai)](https://pypi.org/project/probeagent-ai/)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
-
-<!-- TODO: Record asciinema demo and replace XXXXX with the recording ID
-[![Demo](https://asciinema.org/a/XXXXX.svg)](https://asciinema.org/a/XXXXX)
-
-To record: asciinema rec demo.cast -c "probeagent demo"
-To upload: asciinema upload demo.cast
--->
 
 ## What is ProbeAgent?
 
@@ -22,14 +14,13 @@ Most AI security tools scan static configurations or check for known patterns. P
 
 ## How It Works
 
-```mermaid
-flowchart LR
-    CLI[probeagent attack] --> Engine
-    Engine --> |for each category| Attack[Attack Module]
-    Attack --> |reset conversation| Target
-    Attack --> |multi-turn prompts| Target
-    Target --> |response| Analyzer
-    Analyzer --> |grade| Report[Safe / At Risk / Compromised]
+```
+probeagent attack <url>
+  → Engine (for each category)
+    → Attack Module (reset conversation)
+      → multi-turn prompts → Target → response
+    → Analyzer
+  → Grade: Safe / At Risk / Compromised
 ```
 
 ## Why ProbeAgent?
@@ -47,6 +38,8 @@ flowchart LR
 | Rich terminal reports | - | - | - | **Yes** |
 
 ## Installation
+
+Requires Python 3.10+.
 
 ```bash
 pip install probeagent-ai
@@ -129,7 +122,7 @@ pip install 'probeagent-ai[demo]'
 probeagent demo --live
 ```
 
-The live demo starts a local email agent server with three endpoints at increasing security hardness, then attacks them. See `tools/demo_email_agent.py` for details.
+The live demo starts a local email agent server with three endpoints at increasing security hardness, then attacks them.
 
 ## Commands
 
@@ -162,7 +155,7 @@ probeagent attack https://agent.example.com/api -p standard --converters stealth
 Options:
 - `--profile`, `-p` — Attack profile: `quick`, `standard`, or `thorough` (default: `quick`)
 - `--target-type` — Target type: `http` or `openclaw` (default: `http`)
-- `--output`, `-o` — Output format: `terminal`, `markdown`, `json` (default: `terminal`)
+- `--output`, `-o` — Output format: `terminal`, `markdown`, `json`, `log` (default: `terminal`)
 - `--output-file`, `-f` — Write report to file
 - `--timeout`, `-t` — Request timeout in seconds (default: 30)
 - `--parallel` — Run attack categories in parallel for faster scans
@@ -176,7 +169,7 @@ Check if a target is reachable and detect its API format. Supports `--header/-H`
 
 ### `probeagent list-attacks`
 
-Show all available attack modules with severity and status.
+List all available attack modules with severity and description.
 
 ### `probeagent init`
 
@@ -188,7 +181,7 @@ Launch the War Room tactical display UI in your browser for interactive testing.
 
 ## Attack Categories
 
-12 attack categories with 79 strategies total:
+12 attack categories with 85 strategies total:
 
 | Category | Severity | Strategies | Technique |
 |----------|----------|------------|-----------|
@@ -209,7 +202,7 @@ Launch the War Room tactical display UI in your browser for interactive testing.
 
 | Profile | Categories | Max Turns | Use Case |
 |---------|------------|-----------|----------|
-| `quick` | 5 critical | 1 | CI/CD gates, quick checks |
+| `quick` | 5 high-priority | 1 | CI/CD gates, quick checks |
 | `standard` | All 12 | 3 | Regular security assessments |
 | `thorough` | All 12 | 10 | Pre-release deep scans |
 
@@ -268,11 +261,11 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for full development guidelines.
 
 ## Roadmap
 
-- [x] **Phase 1**: CLI, HTTP target, scoring, reporting
-- [x] **Phase 2**: 9 attack categories with 56 multi-turn strategies
-- [x] **Phase 3**: OpenClaw target adapter, parallel execution, War Room UI
-- [x] **Phase 4**: Zenity-inspired attacks (indirect injection, config manipulation), PyRIT integration
-- [ ] **Phase 5**: MCP target adapter, CI/CD integration, SaaS dashboard
+- [x] CLI, HTTP target, scoring, 4 output formats (terminal, markdown, json, log)
+- [x] 12 attack categories, 85 multi-turn strategies
+- [x] OpenClaw target adapter, parallel execution, War Room UI
+- [x] Zenity-inspired attacks, CVE-based agentic exploitation, PyRIT integration
+- [ ] MCP target adapter, CI/CD integration, SaaS dashboard
 
 ## License
 

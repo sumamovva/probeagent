@@ -304,7 +304,7 @@ def game(
     except ImportError:
         console.print(
             "[red]Error:[/red] Missing dependencies. Install with:\n"
-            "  pip install 'probeagent[game]'"
+            "  pip install 'probeagent-ai[game]'"
         )
         raise typer.Exit(1)
 
@@ -355,10 +355,21 @@ def demo(
 
     if live:
         # Start the real demo agent server
+        import pathlib
+
+        demo_script = pathlib.Path("tools/demo_email_agent.py")
+        if not demo_script.exists():
+            console.print(
+                "[red]Error:[/red] Demo agent script not found (tools/demo_email_agent.py).\n"
+                "The --live flag requires a local checkout of the repository.\n"
+                "See: https://github.com/sumamovva/probeagent"
+            )
+            raise typer.Exit(1)
+
         console.print("\n[bold]Starting demo email agent...[/bold]")
 
         agent_proc = subprocess.Popen(
-            [sys.executable, "tools/demo_email_agent.py"],
+            [sys.executable, str(demo_script)],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
         )
@@ -498,7 +509,7 @@ def demo(
             except ImportError:
                 console.print(
                     "[red]Error:[/red] Missing dependencies. Install with:\n"
-                    "  pip install 'probeagent[game]'"
+                    "  pip install 'probeagent-ai[game]'"
                 )
                 raise typer.Exit(1)
 

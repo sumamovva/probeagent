@@ -239,6 +239,10 @@ class MockTarget(Target):
         else:
             return _HARDENED_REFUSAL
 
+    async def clone(self) -> MockTarget:
+        """Create an independent copy."""
+        return MockTarget(self.url, timeout=self.timeout)
+
     async def validate(self) -> TargetInfo:
         """Always reachable — it's a mock."""
         return TargetInfo(

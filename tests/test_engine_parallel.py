@@ -132,3 +132,35 @@ class TestParallelExecution:
     async def test_parallel_flag_defaults_off(self):
         config = ProbeConfig(target_url="http://example.com")
         assert config.parallel is False
+
+    @pytest.mark.asyncio
+    async def test_strategy_parallel_full_profile(self):
+        """Strategy-level parallelism produces same total results as sequential."""
+        from probeagent.core.engine import AttackEngine
+        from probeagent.core.models import ProbeConfig
+
+        attacks = ["prompt_injection", "credential_exfil", "social_manipulation"]
+
+        seq_config = ProbeConfig(
+            target_url="mock://vulnerable",
+            attacks=attacks,
+            max_turns=1,
+            target_type="mock",
+            parallel=False,
+        )
+        par_config = ProbeConfig(
+            target_url="mock://vulnerable",
+            attacks=attacks,
+            max_turns=1,
+            target_type="mock",
+            parallel=True,
+        )
+
+        seq_results = await AttackEngine(seq_config).run()
+        par_results = await AttackEngine(par_config).run()
+
+        assert len(par_results) == len(seq_results)
+        # Same set of strategy names
+        seq_strategies = sorted(r.metadata.get("strategy", "") for r in seq_results)
+        par_strategies = sorted(r.metadata.get("strategy", "") for r in par_results)
+        assert seq_strategies == par_strategies

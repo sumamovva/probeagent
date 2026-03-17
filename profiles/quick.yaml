@@ -1,5 +1,5 @@
 # ProbeAgent Quick Profile
-# Fast scan — 3 high-priority attacks, single-turn only
+# Fast scan — 5 high-priority attacks, single-turn only
 name: quick
 description: Fast scan with critical attacks only
 

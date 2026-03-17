@@ -159,6 +159,12 @@ class HTTPTarget(Target):
 
         return resp.text
 
+    async def clone(self) -> HTTPTarget:
+        """Create an independent copy with its own messages and client."""
+        copy = HTTPTarget(self.url, timeout=self.timeout, headers=dict(self.headers))
+        copy._detected_format = self._detected_format
+        return copy
+
     async def reset_conversation(self) -> None:
         """Clear conversation history between strategies."""
         self._messages.clear()

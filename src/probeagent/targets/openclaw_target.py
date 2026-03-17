@@ -127,6 +127,15 @@ class OpenClawTarget(Target):
 
         return str(data)
 
+    async def clone(self) -> OpenClawTarget:
+        """Create an independent copy with a fresh session ID."""
+        return OpenClawTarget(
+            self.url,
+            timeout=self.timeout,
+            session_id=f"probeagent-session-{uuid4().hex[:8]}",
+            headers=dict(self.headers),
+        )
+
     async def reset_conversation(self) -> None:
         """Reset the session ID to start a fresh conversation."""
         self.session_id = f"probeagent-session-{uuid4().hex[:8]}"

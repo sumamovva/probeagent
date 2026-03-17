@@ -4,6 +4,7 @@ import httpx
 import respx
 from typer.testing import CliRunner
 
+from probeagent import __version__
 from probeagent.cli import app
 
 runner = CliRunner()
@@ -13,12 +14,12 @@ class TestVersion:
     def test_version_flag(self):
         result = runner.invoke(app, ["--version"])
         assert result.exit_code == 0
-        assert "0.1.2" in result.output
+        assert __version__ in result.output
 
     def test_short_version_flag(self):
         result = runner.invoke(app, ["-V"])
         assert result.exit_code == 0
-        assert "0.1.2" in result.output
+        assert __version__ in result.output
 
 
 class TestHelp:

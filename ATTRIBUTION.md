@@ -86,6 +86,12 @@ OpenClaw-specific and will detect these patterns in any AI agent.
 
 ---
 
+## War Room UI
+
+ProbeAgent's War Room tactical display draws visual inspiration from the WOPR terminal and war room scenes in [*WarGames*](https://en.wikipedia.org/wiki/WarGames) (1983, dir. John Badham), the sci-fi terminal aesthetic of [eDEX-UI](https://github.com/GitSquared/edex-ui) (itself inspired by TRON Legacy), and the broader tradition of terminal-based hacking games like [Hacknet](https://store.steampowered.com/app/365450/Hacknet/) and [hackmud](https://store.steampowered.com/app/469920/hackmud/).
+
+---
+
 ## License
 
 ProbeAgent itself is licensed under Apache 2.0. See [LICENSE](LICENSE) for details.

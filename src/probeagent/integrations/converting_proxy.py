@@ -35,6 +35,11 @@ class ConvertingTargetProxy(Target):
         """Delegate reset to the inner target."""
         await self._inner.reset_conversation()
 
+    async def clone(self) -> ConvertingTargetProxy:
+        """Clone the inner target and wrap with the same converters."""
+        cloned_inner = await self._inner.clone()
+        return ConvertingTargetProxy(cloned_inner, list(self._converters))
+
     async def close(self) -> None:
         """Delegate close to the inner target."""
         await self._inner.close()

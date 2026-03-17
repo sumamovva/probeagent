@@ -20,3 +20,4 @@ htmlcov/
 .mypy_cache/
 .tox/
 demo_report.md
+.DS_Store
