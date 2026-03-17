@@ -1,7 +1,7 @@
 # Copyright 2025 Suma Movva
 # SPDX-License-Identifier: Apache-2.0
 
-"""FastAPI server for the War Room tactical display UI."""
+"""FastAPI server for the Tactical Display UI."""
 
 from __future__ import annotations
 

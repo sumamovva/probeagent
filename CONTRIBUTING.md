@@ -48,7 +48,7 @@ src/probeagent/
 ├── targets/            # Target adapters (HTTP, OpenClaw, Mock)
 ├── integrations/       # Optional PyRIT integration
 ├── utils/              # Config, env loading
-└── web/                # War Room UI assets
+└── web/                # Tactical Display UI assets
 profiles/               # YAML attack profiles (quick, standard, thorough)
 tools/                  # Demo email agent and payloads
 tests/                  # pytest test suite

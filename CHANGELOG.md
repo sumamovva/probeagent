@@ -47,7 +47,7 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - HTTP, OpenClaw, and Mock target adapters
 - Sequential and parallel execution
 - Terminal, Markdown, and JSON report formats
-- War Room tactical display UI
+- Tactical Display UI
 - PyRIT integration (evasion converters + red team mode)
 - Quick, standard, and thorough attack profiles
 

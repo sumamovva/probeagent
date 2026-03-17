@@ -298,7 +298,7 @@ def game(
         help="HTTP header as 'Key: Value' (repeatable).",
     ),
 ) -> None:
-    """Launch the War Room tactical display UI in your browser."""
+    """Launch the Tactical Display UI in your browser."""
     try:
         import uvicorn
     except ImportError:
@@ -338,7 +338,7 @@ def game(
 @app.command()
 def demo(
     live: bool = typer.Option(False, "--live", help="Use real API (starts demo email agent)."),
-    game: bool = typer.Option(False, "--game", help="Launch War Room UI after attacks."),
+    game: bool = typer.Option(False, "--game", help="Launch Tactical Display UI after attacks."),
     profile: str = typer.Option("quick", "--profile", "-p", help="Attack profile name."),
 ) -> None:
     """Run a full demo — attack a vulnerable + hardened target and compare results."""
@@ -500,9 +500,9 @@ def demo(
             f.write(combined_report)
         console.print(f"\n[green]Report saved to:[/green] {report_path}")
 
-        # ── Launch War Room if requested ──
+        # ── Launch Tactical Display if requested ──
         if game:
-            console.print("\n[bold]Launching War Room...[/bold]")
+            console.print("\n[bold]Launching Tactical Display...[/bold]")
             # Reuse the game command logic
             try:
                 import uvicorn

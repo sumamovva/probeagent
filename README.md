@@ -61,6 +61,18 @@ pip install 'probeagent-ai[pyrit]'
 
 ## Quickstart
 
+### Choose your path
+
+The `<url>` is the HTTP endpoint your agent listens on for messages — the URL you'd POST a chat message to (e.g. `https://my-agent.fly.dev/chat`).
+
+| I want to... | Command |
+|---|---|
+| See how it works with no setup | `probeagent demo` |
+| Test my own agent | `probeagent attack https://my-agent.example.com/chat` |
+| Run the Tactical Display UI against my agent | `probeagent game https://my-agent.example.com/chat` |
+
+> **Note:** The Tactical Display game UI is a fun tactical visualization for real HTTP targets. `probeagent demo` and `probeagent attack` are the core CLI experience.
+
 ### Instant demo (no setup required)
 
 ```bash
@@ -112,10 +124,11 @@ Run a complete security assessment in seconds with zero setup:
 probeagent demo
 ```
 
-Add the War Room tactical display for a visual experience:
+To follow with the Tactical Display tactical display against a real target (requires the `game` extra):
 
 ```bash
-probeagent demo --game
+pip install 'probeagent-ai[game]'
+probeagent game https://your-agent.example.com/api
 ```
 
 ### Live demo (real API)
@@ -138,14 +151,14 @@ Run a full demo — attack a vulnerable + hardened target and compare results.
 
 ```bash
 probeagent demo                    # Instant, uses mock target
-probeagent demo --game             # With War Room tactical display
+probeagent demo --game             # With Tactical Display tactical display
 probeagent demo --live             # Real API (requires ANTHROPIC_API_KEY)
 probeagent demo --profile standard # Use a different attack profile
 ```
 
 Options:
 - `--live` — Use real API (starts demo email agent server)
-- `--game` — Launch War Room UI after attacks
+- `--game` — Launch Tactical Display UI after attacks (requires a real HTTP target, not mock)
 - `--profile`, `-p` — Attack profile: `quick`, `standard`, or `thorough` (default: `quick`)
 
 ### `probeagent attack <url>`
@@ -183,7 +196,7 @@ Create a default `.probeagent.yaml` config file in the current directory.
 
 ### `probeagent game [url]`
 
-Launch the War Room tactical display UI in your browser for interactive testing.
+Launch the Tactical Display tactical display UI in your browser for interactive testing.
 
 ## Attack Categories
 
@@ -269,7 +282,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for full development guidelines.
 
 - [x] CLI, HTTP target, scoring, 4 output formats (terminal, markdown, json, log)
 - [x] 12 attack categories, 85 multi-turn strategies
-- [x] OpenClaw target adapter, parallel execution, War Room UI
+- [x] OpenClaw target adapter, parallel execution, Tactical Display UI
 - [x] Zenity-inspired attacks, CVE-based agentic exploitation, PyRIT integration
 - [ ] MCP target adapter, CI/CD integration, SaaS dashboard
 
