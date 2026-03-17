@@ -72,11 +72,17 @@ This attacks a built-in mock target — a vulnerable agent and a hardened one �
 
 ### Scan your own agent
 
+ProbeAgent works with any HTTP-accessible agent. It auto-detects your API format:
+
+- **OpenAI chat format** — `{"messages": [{"role": "user", "content": "..."}]}` → `{"choices": [...]}`
+- **Simple JSON** — `{"prompt": "..."}` → `{"response": "..."}` (also accepts `text`, `content`, `output`, `result` keys)
+- **Plain text** — any endpoint that returns text
+
 ```bash
-# Validate your target is reachable
+# Validate your target is reachable (auto-detects format)
 probeagent validate https://your-agent.example.com/api
 
-# Run a quick security scan
+# Run a quick security scan (~30s with mock, longer with real LLM targets)
 probeagent attack https://your-agent.example.com/api --profile quick
 
 # Full scan with parallel execution
