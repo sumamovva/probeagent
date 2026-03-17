@@ -103,16 +103,39 @@ probeagent attack https://your-agent.example.com/api --profile standard --parall
 
 ### Scan an OpenClaw agent
 
-```bash
-# Validate an OpenClaw instance (auto-detects OpenAI chat format)
-probeagent validate http://localhost:3000/v1/chat/completions \
-  -H 'Authorization: Bearer YOUR_TOKEN'
+OpenClaw exposes an OpenAI-compatible gateway at `/v1/chat/completions`. Use `--target-type http` (the default) — **not** `--target-type openclaw`, which targets the n8n webhook format and is not compatible with the gateway.
 
-# Attack it
-probeagent attack http://localhost:3000/v1/chat/completions \
-  -H 'Authorization: Bearer YOUR_TOKEN' \
-  --profile standard --parallel
+**Find your token and port:**
+
+```bash
+# Your gateway auth token and port are in ~/.openclaw/openclaw.json
+cat ~/.openclaw/openclaw.json | python3 -c "import sys,json; d=json.load(sys.stdin); print(d['gateway']['auth']['token'])"
 ```
+
+**Validate and attack:**
+
+```bash
+# Replace <PORT> with your OpenClaw gateway port (commonly 18789 or 3000)
+# Replace <TOKEN> with the token from ~/.openclaw/openclaw.json
+
+# Check reachability first
+probeagent validate http://127.0.0.1:<PORT>/v1/chat/completions \
+  -H 'Authorization: Bearer <TOKEN>'
+
+# Quick scan (~33 strategies, ~2-5 min depending on LLM response time)
+probeagent attack http://127.0.0.1:<PORT>/v1/chat/completions \
+  -H 'Authorization: Bearer <TOKEN>' \
+  --profile quick \
+  --timeout 120
+
+# Full scan with parallel execution
+probeagent attack http://127.0.0.1:<PORT>/v1/chat/completions \
+  -H 'Authorization: Bearer <TOKEN>' \
+  --profile standard --parallel \
+  --timeout 120
+```
+
+> **Note:** Use `--timeout 120` (or higher) for LLM-backed agents — response times are much longer than typical APIs.
 
 ## Demo
 
@@ -124,7 +147,7 @@ Run a complete security assessment in seconds with zero setup:
 probeagent demo
 ```
 
-To follow with the Tactical Display tactical display against a real target (requires the `game` extra):
+To follow with the Tactical Display UI against a real target (requires the `game` extra):
 
 ```bash
 pip install 'probeagent-ai[game]'
@@ -151,7 +174,7 @@ Run a full demo — attack a vulnerable + hardened target and compare results.
 
 ```bash
 probeagent demo                    # Instant, uses mock target
-probeagent demo --game             # With Tactical Display tactical display
+probeagent demo --game             # With Tactical Display UI
 probeagent demo --live             # Real API (requires ANTHROPIC_API_KEY)
 probeagent demo --profile standard # Use a different attack profile
 ```
@@ -196,7 +219,7 @@ Create a default `.probeagent.yaml` config file in the current directory.
 
 ### `probeagent game [url]`
 
-Launch the Tactical Display tactical display UI in your browser for interactive testing.
+Launch the Tactical Display UI in your browser for interactive testing.
 
 ## Attack Categories
 
