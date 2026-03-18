@@ -248,6 +248,20 @@ Launch the Tactical Display UI in your browser for interactive testing.
 | `standard` | All 12 | 3 | Regular security assessments |
 | `thorough` | All 12 | 10 | Pre-release deep scans |
 
+## Using the output for remediation
+
+ProbeAgent's JSON report gives you structured findings you can feed into any remediation workflow — including another AI agent set up to read attack results and suggest hardening steps.
+
+```bash
+# Save findings as JSON
+probeagent attack https://your-agent.example.com/api --profile standard --output json -f findings.json
+
+# Feed to a remediation agent, custom script, or Claude
+cat findings.json | your-remediation-agent
+```
+
+Each finding includes the attack category, strategy name, severity, outcome, and the full conversation transcript — enough context for an agent to understand what succeeded and why, and recommend specific mitigations.
+
 ## PyRIT Integration
 
 ProbeAgent optionally integrates with [Microsoft PyRIT](https://github.com/Azure/PyRIT) for advanced capabilities:
