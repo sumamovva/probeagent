@@ -119,10 +119,10 @@ probeagent attack http://localhost:8000/webhook/email-agent-hardened \
 
 ---
 
-## [4:00–5:00] The War Room
+## [4:00–5:00] The Tactical Display
 
 **Say:**
-> "And for the full picture, here's the War Room — our tactical display
+> "And for the full picture, here's the Tactical Display — a live visualization
 > that shows you the real-time state of your agent's defenses."
 
 **Run:**

@@ -4,7 +4,7 @@
 #
 # Usage:
 #   bash tools/run_demo.sh              # Run standard demo
-#   bash tools/run_demo.sh --game       # Run demo + launch War Room UI
+#   bash tools/run_demo.sh --game       # Run demo + launch Tactical Display UI
 #
 set -euo pipefail
 
@@ -126,11 +126,11 @@ echo "  Hardened endpoint:   Likely SAFE"
 echo "============================================"
 
 # ---------------------------------------------------------------------------
-# Optional: Launch War Room
+# Optional: Launch Tactical Display
 # ---------------------------------------------------------------------------
 
 if [ "$LAUNCH_GAME" = true ]; then
     echo ""
-    echo "[*] Launching War Room tactical display..."
+    echo "[*] Launching Tactical Display..."
     probeagent game "$TARGET_URL" --target-type openclaw -p standard
 fi
