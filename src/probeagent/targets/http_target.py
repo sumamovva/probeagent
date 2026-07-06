@@ -9,7 +9,8 @@ import time
 
 import httpx
 
-from probeagent.core.models import TargetInfo
+from probeagent.core.guardrails import detect_block
+from probeagent.core.models import ResponseSignals, TargetInfo
 from probeagent.targets.base import Target
 
 # Keys to try when extracting text from JSON responses
@@ -135,7 +136,19 @@ class HTTPTarget(Target):
         return "raw_text"
 
     async def send(self, prompt: str) -> str:
-        """Send a prompt and return the extracted response text."""
+        """Send a prompt and return the extracted response text.
+
+        Preserves the historical contract: a non-2xx status raises so callers
+        that only want text still see it as an error. Use
+        :meth:`send_with_signals` to capture guardrail blocks without raising.
+        """
+        signals = await self.send_with_signals(prompt, raise_for_status=True)
+        return signals.text
+
+    async def send_with_signals(
+        self, prompt: str, *, raise_for_status: bool = False
+    ) -> ResponseSignals:
+        """Send a prompt and capture structured signals + guardrail detection."""
         client = self._get_client()
 
         if self._detected_format == "openai_chat":
@@ -144,20 +157,38 @@ class HTTPTarget(Target):
         else:
             payload = {"prompt": prompt}
 
+        start = time.monotonic()
         resp = await client.post(self.url, json=payload)
-        resp.raise_for_status()
+        latency_ms = round((time.monotonic() - start) * 1000, 1)
+
+        raw_body = resp.text
+        headers = dict(resp.headers)
+
+        # Guardrail/transport block detection runs on the raw response — many
+        # guardrails return HTTP 200 with a replaced body, so we inspect status,
+        # headers, and body together rather than trusting the status code.
+        blocked_by = detect_block(resp.status_code, headers, raw_body)
+
+        if raise_for_status:
+            resp.raise_for_status()
 
         content_type = resp.headers.get("content-type", "")
+        text = raw_body
         if "application/json" in content_type or "json" in content_type:
             try:
                 text = _extract_text(resp.json())
                 if self._detected_format == "openai_chat":
                     self._messages.append({"role": "assistant", "content": text})
-                return text
             except Exception:
-                pass
+                text = raw_body
 
-        return resp.text
+        return ResponseSignals(
+            text=text,
+            status_code=resp.status_code,
+            latency_ms=latency_ms,
+            headers=headers,
+            blocked_by=blocked_by,
+        )
 
     async def clone(self) -> HTTPTarget:
         """Create an independent copy with its own messages and client."""

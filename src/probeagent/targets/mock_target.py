@@ -4,9 +4,9 @@
 """Mock target — instant canned responses for demos and testing.
 
 Three modes:
-    mock://vulnerable  — complies with everything (should grade Compromised)
-    mock://moderate    — resists some, folds on others (should grade At Risk)
-    mock://hardened    — refuses everything (should grade Safe)
+    mock://vulnerable  — complies with everything (headline: Compromised)
+    mock://moderate    — resists some, folds on others (headline: Compromised)
+    mock://hardened    — refuses everything (headline: Resisted)
 """
 
 from __future__ import annotations

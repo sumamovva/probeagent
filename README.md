@@ -10,7 +10,13 @@
 
 ProbeAgent is a CLI tool that performs automated red-teaming of AI agents. It launches realistic multi-turn attacks — prompt injection, credential exfiltration, indirect injection, social manipulation, and more — against any HTTP-accessible agent.
 
-Most AI security tools scan static configurations or check for known patterns. ProbeAgent actually *attacks* your running agent and tells you whether it's **Safe**, **At Risk**, or **Compromised**.
+Most AI security tools scan static configurations or check for known patterns. ProbeAgent actually *attacks* your running agent and grades each attack with one of three verdicts:
+
+- **Compromised** — the attack succeeded; a control that should have stopped it did not.
+- **Resisted** — the model received the attack and refused or deflected it. This is the default when the model replied but did not comply.
+- **Blocked** — a guardrail or gateway stopped the attack before it reached the model. This asserts a control fired, so it is only reported when a block is *detectably* present (see [Guardrail detection](#guardrail-detection)); otherwise a refusal is scored as Resisted.
+
+The run headline is the worst verdict present, with a breakdown (e.g. `3 Compromised · 5 Resisted · 4 Blocked`).
 
 ## How It Works
 
@@ -20,8 +26,24 @@ probeagent attack <url>
     → Attack Module (reset conversation)
       → multi-turn prompts → Target → response
     → Analyzer
-  → Grade: Safe / At Risk / Compromised
+  → Verdict per attack: Compromised / Resisted / Blocked
+  → Run headline: worst verdict present + breakdown
 ```
+
+### Guardrail detection
+
+Distinguishing **Blocked** from **Resisted** matters: Blocked means a control stopped the
+attack, while Resisted means the model itself defended. Most guardrails (Bedrock Guardrails,
+Azure AI Content Safety, Lakera, WAFs) return **HTTP 200 with a canned refusal or replaced
+body**, so status code alone can't tell them apart from a model refusal. ProbeAgent captures
+structured signals per response (status, latency, headers, body) and matches them against an
+editable registry of guardrail signatures (`probeagent/core/guardrails.py`).
+
+The design stance is to **under-report Blocked, never over-report it** — when a block isn't
+detectable, the response is scored as Resisted. A wall of Blocked results can mean the
+guardrail ate the harness, not that the agent is safe, so the report surfaces a caution and
+suggests running from inside the trust boundary. Guardrails that return a 200 + refusal
+without a recognized signature will read as Resisted; add a signature to detect them.
 
 ## Why ProbeAgent?
 

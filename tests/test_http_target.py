@@ -182,6 +182,70 @@ class TestHTTPTargetSend:
         assert result == "Echo: Hello"
 
 
+class TestHTTPTargetSignals:
+    @respx.mock
+    @pytest.mark.asyncio
+    async def test_captures_status_and_text(self):
+        respx.post("https://example.com/api").mock(
+            return_value=httpx.Response(
+                200,
+                json={"response": "Hello back!"},
+                headers={"content-type": "application/json"},
+            )
+        )
+        target = HTTPTarget("https://example.com/api")
+        target._detected_format = "json_api"
+        signals = await target.send_with_signals("Hello")
+        await target.close()
+
+        assert signals.text == "Hello back!"
+        assert signals.status_code == 200
+        assert signals.blocked_by is None
+
+    @respx.mock
+    @pytest.mark.asyncio
+    async def test_detects_guardrail_block_on_200(self):
+        # A guardrail returns HTTP 200 with a replaced/blocked body.
+        respx.post("https://example.com/api").mock(
+            return_value=httpx.Response(
+                200,
+                json={"amazon-bedrock-guardrailAction": "INTERVENED"},
+                headers={"content-type": "application/json"},
+            )
+        )
+        target = HTTPTarget("https://example.com/api")
+        target._detected_format = "json_api"
+        signals = await target.send_with_signals("attack")
+        await target.close()
+
+        assert signals.blocked_by == "bedrock_guardrail"
+
+    @respx.mock
+    @pytest.mark.asyncio
+    async def test_detects_403_block_without_raising(self):
+        respx.post("https://example.com/api").mock(
+            return_value=httpx.Response(403, text="Forbidden")
+        )
+        target = HTTPTarget("https://example.com/api")
+        target._detected_format = "raw_text"
+        signals = await target.send_with_signals("attack")
+        await target.close()
+
+        assert signals.status_code == 403
+        assert signals.blocked_by == "http_forbidden"
+
+    @respx.mock
+    @pytest.mark.asyncio
+    async def test_send_still_raises_on_non_2xx(self):
+        # Backward-compatible: the text-only send() preserves raise-on-error.
+        respx.post("https://example.com/api").mock(return_value=httpx.Response(500, text="boom"))
+        target = HTTPTarget("https://example.com/api")
+        target._detected_format = "raw_text"
+        with pytest.raises(httpx.HTTPStatusError):
+            await target.send("attack")
+        await target.close()
+
+
 class TestHTTPTargetClose:
     @pytest.mark.asyncio
     async def test_close_idempotent(self):

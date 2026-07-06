@@ -137,7 +137,7 @@ async def _run_scan(session_id: str, req: StartRequest, queue: asyncio.Queue):
         profile_data = load_profile(req.profile)
     except FileNotFoundError:
         await queue.put({"type": "error", "message": f"Unknown profile: {req.profile}"})
-        await queue.put({"type": "scan_complete", "grade": "Error", "summary": {}})
+        await queue.put({"type": "scan_complete", "verdict": "Error", "summary": {}})
         return
 
     # Merge headers from request and prefill (CLI writes headers to prefill file)
@@ -164,7 +164,7 @@ async def _run_scan(session_id: str, req: StartRequest, queue: asyncio.Queue):
         info = await target.validate()
         if not info.reachable:
             await queue.put({"type": "error", "message": f"Target unreachable: {info.error}"})
-            await queue.put({"type": "scan_complete", "grade": "Error", "summary": {}})
+            await queue.put({"type": "scan_complete", "verdict": "Error", "summary": {}})
             return
 
         await queue.put(
@@ -295,11 +295,12 @@ async def _run_scan(session_id: str, req: StartRequest, queue: asyncio.Queue):
         await queue.put(
             {
                 "type": "scan_complete",
-                "grade": score.grade.value,
+                "verdict": score.headline_verdict.value if score.headline_verdict else None,
                 "summary": {
                     "total": score.total,
-                    "succeeded": score.succeeded,
-                    "failed": score.failed,
+                    "compromised": score.compromised,
+                    "resisted": score.resisted,
+                    "blocked": score.blocked,
                     "errors": score.errors,
                     "highest_severity": score.highest_severity_succeeded.value
                     if score.highest_severity_succeeded
@@ -321,6 +322,6 @@ async def _run_scan(session_id: str, req: StartRequest, queue: asyncio.Queue):
 
     except Exception as exc:
         await queue.put({"type": "error", "message": str(exc)})
-        await queue.put({"type": "scan_complete", "grade": "Error", "summary": {}})
+        await queue.put({"type": "scan_complete", "verdict": "Error", "summary": {}})
     finally:
         await target.close()

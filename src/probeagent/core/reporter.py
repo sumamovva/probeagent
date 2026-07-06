@@ -21,17 +21,40 @@ from probeagent.core.models import (
     AttackOutcome,
     OutputFormat,
     ProbeConfig,
-    ResilienceGrade,
     ResilienceScore,
     Severity,
     TargetInfo,
+    Verdict,
 )
+from probeagent.core.verdicts import result_verdict
 
-_GRADE_COLORS = {
-    ResilienceGrade.SAFE: "green",
-    ResilienceGrade.AT_RISK: "yellow",
-    ResilienceGrade.COMPROMISED: "red",
+_VERDICT_COLORS = {
+    Verdict.COMPROMISED: "red",
+    Verdict.RESISTED: "green",
+    Verdict.BLOCKED: "yellow",
 }
+
+
+def _blocked_caution(score: ResilienceScore) -> str | None:
+    """Caution shown when categories rolled up to Blocked.
+
+    A wall of Blocked can mean the guardrail ate the harness, not that the agent
+    is safe — make that legible so it is not misread as 'secure'.
+    """
+    if score.blocked <= 0:
+        return None
+    return (
+        f"{score.blocked} attack "
+        f"{'category' if score.blocked == 1 else 'categories'} blocked upstream; "
+        "your model was not exercised by these. A guardrail or gateway stopped "
+        "the attack before it reached the model — this is not evidence the model "
+        "itself is safe. Consider running from inside the trust boundary."
+    )
+
+
+def _verdict_label(verdict: Verdict | None) -> str:
+    return verdict.value if verdict is not None else "No verdict"
+
 
 _SEVERITY_COLORS = {
     Severity.LOW: "green",
@@ -94,35 +117,44 @@ class Reporter:
         header_text = f"Target:  {target_info.url}\nProfile: {config.profile}\nTime:    {now}"
         console.print(Panel(header_text, title="ProbeAgent Report", border_style="blue"))
 
-        # Score card
-        color = _GRADE_COLORS.get(score.grade, "white")
-        grade_text = Text(f"  {score.grade.value}  ", style=f"bold {color}")
-        score_detail = (
-            f"Total: {score.total}  |  "
-            f"Succeeded: {score.succeeded}  |  "
-            f"Failed: {score.failed}  |  "
-            f"Errors: {score.errors}"
+        # Score card — headline verdict + breakdown
+        color = _VERDICT_COLORS.get(score.headline_verdict, "white")
+        headline = _verdict_label(score.headline_verdict)
+        verdict_text = Text(f"  {headline}  ", style=f"bold {color}")
+        breakdown = (
+            f"{score.compromised} Compromised  ·  "
+            f"{score.resisted} Resisted  ·  "
+            f"{score.blocked} Blocked"
         )
-        console.print(Panel(grade_text, title="Resilience Grade", border_style=color))
-        console.print(f"  {score_detail}\n")
+        if score.errors:
+            breakdown += f"  ·  {score.errors} Errored"
+        console.print(Panel(verdict_text, title="Verdict", border_style=color))
+        console.print(f"  {breakdown}\n")
+
+        caution = _blocked_caution(score)
+        if caution:
+            console.print(
+                Panel(f"[yellow]{caution}[/yellow]", title="Caution", border_style="yellow")
+            )
+            console.print()
 
         # Attack results table
         if score.summaries:
             table = Table(title="Attack Results", show_lines=True)
             table.add_column("Attack", style="bold")
             table.add_column("Severity")
-            table.add_column("Outcome")
-            table.add_column("Success Rate")
+            table.add_column("Verdict")
+            table.add_column("Detail")
 
             for s in score.summaries:
                 sev_color = _SEVERITY_COLORS.get(s.severity, "white")
-                rate = f"{s.success_rate:.0%}"
-                outcome_str = f"{s.succeeded}/{s.total} succeeded"
+                v_color = _VERDICT_COLORS.get(s.verdict, "dim")
+                detail = f"{s.succeeded}/{s.total} strategies compromised"
                 table.add_row(
                     s.display_name,
                     Text(s.severity.value.upper(), style=sev_color),
-                    outcome_str,
-                    rate,
+                    Text(_verdict_label(s.verdict), style=v_color),
+                    detail,
                 )
             console.print(table)
             console.print()
@@ -163,34 +195,38 @@ class Reporter:
             f"**Timestamp:** {now}",
             f"**ProbeAgent Version:** {__version__}",
             "",
-            "## Resilience Grade",
+            "## Verdict",
             "",
-            f"**Grade: {score.grade.value}**",
+            f"**{_verdict_label(score.headline_verdict)}** — "
+            f"{score.compromised} Compromised · {score.resisted} Resisted · "
+            f"{score.blocked} Blocked" + (f" · {score.errors} Errored" if score.errors else ""),
             "",
-            "| Metric | Count |",
-            "|--------|-------|",
-            f"| Total | {score.total} |",
-            f"| Succeeded | {score.succeeded} |",
-            f"| Failed | {score.failed} |",
-            f"| Errors | {score.errors} |",
-            f"| Skipped | {score.skipped} |",
+            "| Verdict | Categories |",
+            "|---------|-----------|",
+            f"| Compromised | {score.compromised} |",
+            f"| Resisted | {score.resisted} |",
+            f"| Blocked | {score.blocked} |",
+            f"| Errored | {score.errors} |",
             "",
         ]
+
+        caution = _blocked_caution(score)
+        if caution:
+            lines.extend([f"> **Caution:** {caution}", ""])
 
         if score.summaries:
             lines.extend(
                 [
                     "## Attack Summary",
                     "",
-                    "| Attack | Severity | Succeeded | Total | Success Rate |",
-                    "|--------|----------|-----------|-------|-------------|",
+                    "| Attack | Severity | Verdict | Strategies Compromised |",
+                    "|--------|----------|---------|------------------------|",
                 ]
             )
             for s in score.summaries:
-                rate = f"{s.success_rate:.0%}"
                 lines.append(
                     f"| {s.display_name} | {s.severity.value.upper()} "
-                    f"| {s.succeeded} | {s.total} | {rate} |"
+                    f"| {_verdict_label(s.verdict)} | {s.succeeded}/{s.total} |"
                 )
             lines.append("")
 
@@ -296,21 +332,24 @@ class Reporter:
             f"Profile: {config.profile} | Max turns: {config.max_turns}",
             f"Time: {now}",
             "",
-            f"## Grade: {score.grade.value}",
+            f"## Verdict: {_verdict_label(score.headline_verdict)}",
             "",
-            f"Total: {score.total} | Succeeded: {score.succeeded} | "
-            f"Failed: {score.failed} | Errors: {score.errors}",
+            f"{score.compromised} Compromised | {score.resisted} Resisted | "
+            f"{score.blocked} Blocked | {score.errors} Errored",
             "",
         ]
+
+        caution = _blocked_caution(score)
+        if caution:
+            lines.extend([f"CAUTION: {caution}", ""])
 
         # --- Category summary ---
         lines.append("## Results by Category")
         lines.append("")
         for s in score.summaries:
-            status = "BREACHED" if s.succeeded > 0 else "HELD"
             lines.append(
-                f"- [{status}] {s.display_name} ({s.severity.value.upper()}) "
-                f"— {s.succeeded}/{s.total} succeeded"
+                f"- [{_verdict_label(s.verdict).upper()}] {s.display_name} "
+                f"({s.severity.value.upper()}) — {s.succeeded}/{s.total} strategies compromised"
             )
         lines.append("")
 
@@ -388,7 +427,15 @@ class Reporter:
                 "attacker_model": config.attacker_model,
             },
             "resilience_score": {
-                "grade": score.grade.value,
+                "headline_verdict": (
+                    score.headline_verdict.value if score.headline_verdict else None
+                ),
+                "verdict_breakdown": {
+                    "compromised": score.compromised,
+                    "resisted": score.resisted,
+                    "blocked": score.blocked,
+                },
+                "caution": _blocked_caution(score),
                 "total": score.total,
                 "succeeded": score.succeeded,
                 "failed": score.failed,
@@ -405,6 +452,7 @@ class Reporter:
                     "attack_name": s.attack_name,
                     "display_name": s.display_name,
                     "severity": s.severity.value,
+                    "verdict": s.verdict.value if s.verdict else None,
                     "total": s.total,
                     "succeeded": s.succeeded,
                     "failed": s.failed,
@@ -417,8 +465,10 @@ class Reporter:
                     "id": r.id,
                     "attack_name": r.attack_name,
                     "outcome": r.outcome.value,
+                    "verdict": (result_verdict(r).value if result_verdict(r) is not None else None),
                     "severity": r.severity.value,
                     "success": r.success,
+                    "blocked_by": r.signals.blocked_by if r.signals else None,
                     "execution_time": r.execution_time,
                     "score_rationale": r.score_rationale,
                     "error": r.error,

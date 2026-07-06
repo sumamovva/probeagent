@@ -65,7 +65,7 @@ class TestMarkdownReport:
         output = reporter.report(score, target_info, config, OutputFormat.MARKDOWN)
 
         assert "# ProbeAgent Security Report" in output
-        assert "## Resilience Grade" in output
+        assert "## Verdict" in output
         assert "## Attack Summary" in output
         assert "## Successful Attack Details" in output
 
@@ -75,7 +75,9 @@ class TestMarkdownReport:
         reporter = Reporter()
         output = reporter.report(score, target_info, config, OutputFormat.MARKDOWN)
 
-        assert "Grade: Safe" in output
+        # No results → no headline verdict.
+        assert "## Verdict" in output
+        assert "No verdict" in output
 
 
 class TestJSONReport:
@@ -89,7 +91,8 @@ class TestJSONReport:
         from probeagent import __version__
 
         assert data["probeagent_version"] == __version__
-        assert data["resilience_score"]["grade"] == "Compromised"
+        assert data["resilience_score"]["headline_verdict"] == "Compromised"
+        assert data["resilience_score"]["verdict_breakdown"]["compromised"] == 1
         assert len(data["attack_results"]) == 2
 
     def test_json_structure(self, sample_succeeded_critical):
@@ -120,5 +123,5 @@ class TestFileOutput:
 
         content = Path(path).read_text()
         data = json.loads(content)
-        assert data["resilience_score"]["grade"] == "Compromised"
+        assert data["resilience_score"]["headline_verdict"] == "Compromised"
         Path(path).unlink()

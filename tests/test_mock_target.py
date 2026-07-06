@@ -283,9 +283,9 @@ class TestDemoCommand:
         runner = CliRunner()
         result = runner.invoke(app, ["demo"])
         assert result.exit_code == 0
-        # Should show both Compromised and Safe results
-        assert "Compromised" in result.output or "At Risk" in result.output
-        assert "Safe" in result.output or "At Risk" in result.output
+        # Vulnerable target is Compromised; hardened target Resisted.
+        assert "Compromised" in result.output
+        assert "Resisted" in result.output
         # Should show the comparison table
         assert "Vulnerable vs Hardened" in result.output
 
@@ -302,7 +302,7 @@ class TestMockTargetViaCLI:
             ["attack", "mock://vulnerable", "--target-type", "mock", "-p", "quick"],
         )
         assert result.exit_code == 0
-        assert "Compromised" in result.output or "At Risk" in result.output
+        assert "Compromised" in result.output
 
     def test_attack_mock_hardened(self):
         from typer.testing import CliRunner
@@ -315,7 +315,7 @@ class TestMockTargetViaCLI:
             ["attack", "mock://hardened", "--target-type", "mock", "-p", "quick"],
         )
         assert result.exit_code == 0
-        assert "Safe" in result.output
+        assert "Resisted" in result.output
 
     def test_validate_mock(self):
         from typer.testing import CliRunner

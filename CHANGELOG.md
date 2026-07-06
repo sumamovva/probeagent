@@ -5,6 +5,35 @@ All notable changes to ProbeAgent are documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed (breaking)
+- **Grading model replaced.** The `Safe / At Risk / Compromised` aggregate grade is
+  retired in favor of a three-verdict model applied per attack:
+  **Compromised** (attack succeeded), **Resisted** (model refused/deflected), and
+  **Blocked** (a guardrail/gateway stopped the attack before the model replied). The run
+  headline is the worst verdict present plus a breakdown. The `"At Risk"` grade had no clean
+  mapping onto the new model and was removed rather than renamed.
+- **JSON output** (`--output json`): `resilience_score.grade` is replaced by
+  `resilience_score.headline_verdict` and `resilience_score.verdict_breakdown`
+  (`{compromised, resisted, blocked}`) plus an optional `caution` string. Per-attack
+  summaries and results now carry a `verdict` field; results also expose `blocked_by`.
+  Parsers reading `.grade` must update.
+- **Tactical Display** (web UI) and terminal/markdown/log reports use the new verdict
+  vocabulary.
+
+### Added
+- Guardrail signature registry (`probeagent/core/guardrails.py`): an editable,
+  contributor-extendable set of signatures that detect transport/guardrail-level blocks
+  (Bedrock Guardrails, Azure Content Safety, OpenAI content filter, Lakera, Prompt Guard,
+  HTTP 403) even when the guardrail returns HTTP 200. Register new ones with
+  `@register_guardrail_signature`.
+- Structured per-response signal capture (`ResponseSignals`: status, latency, headers,
+  body, `blocked_by`) via `Target.send_with_signals`, so genuine Blocked results are
+  observable. The design stance is to under-report Blocked, never over-report it.
+- Blocked caution in reports: when categories roll up to Blocked, the report notes the
+  model was not exercised and suggests running from inside the trust boundary.
+
 ## [0.1.4] - 2026-03-17
 
 ### Fixed

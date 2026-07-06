@@ -17,7 +17,14 @@ from rich.text import Text
 from probeagent import __version__
 from probeagent.attacks import ATTACK_REGISTRY
 from probeagent.core.engine import AttackEngine
-from probeagent.core.models import OutputFormat, ProbeConfig, Severity, TargetInfo
+from probeagent.core.models import (
+    OutputFormat,
+    ProbeConfig,
+    ResilienceScore,
+    Severity,
+    TargetInfo,
+    Verdict,
+)
 from probeagent.core.reporter import Reporter
 from probeagent.core.scoring import calculate_resilience_score
 from probeagent.targets.base import Target
@@ -57,6 +64,20 @@ _SEVERITY_COLORS = {
     Severity.HIGH: "red",
     Severity.CRITICAL: "bold red",
 }
+
+_VERDICT_COLORS = {
+    Verdict.COMPROMISED: "red",
+    Verdict.RESISTED: "green",
+    Verdict.BLOCKED: "yellow",
+}
+
+
+def _verdict_label(verdict: Verdict | None) -> str:
+    return verdict.value if verdict is not None else "No verdict"
+
+
+def _verdict_style(score: ResilienceScore) -> str:
+    return _VERDICT_COLORS.get(score.headline_verdict, "white")
 
 
 def _version_callback(value: bool) -> None:
@@ -464,23 +485,25 @@ def demo(
         comp_table.add_column("Vulnerable", justify="center")
         comp_table.add_column("Hardened", justify="center")
 
-        vuln_grade_color = "red" if vuln_score.grade.value == "Compromised" else "yellow"
-        hard_grade_color = "green" if hard_score.grade.value == "Safe" else "yellow"
-
         comp_table.add_row(
-            "Grade",
-            Text(vuln_score.grade.value, style=vuln_grade_color),
-            Text(hard_score.grade.value, style=hard_grade_color),
+            "Verdict",
+            Text(_verdict_label(vuln_score.headline_verdict), style=_verdict_style(vuln_score)),
+            Text(_verdict_label(hard_score.headline_verdict), style=_verdict_style(hard_score)),
         )
         comp_table.add_row(
-            "Attacks Succeeded",
-            str(vuln_score.succeeded),
-            str(hard_score.succeeded),
+            "Compromised",
+            str(vuln_score.compromised),
+            str(hard_score.compromised),
         )
         comp_table.add_row(
-            "Attacks Failed",
-            str(vuln_score.failed),
-            str(hard_score.failed),
+            "Resisted",
+            str(vuln_score.resisted),
+            str(hard_score.resisted),
+        )
+        comp_table.add_row(
+            "Blocked",
+            str(vuln_score.blocked),
+            str(hard_score.blocked),
         )
         comp_table.add_row(
             "Total",

@@ -2120,21 +2120,21 @@ async function showGradeReveal(grade, summary) {
   sfxDrumRoll();
   await sleep(1200);
 
-  // Grade text + subtitle mapping
+  // Verdict text + subtitle mapping
   let gradeDisplay, gradeClass, subtitle;
   if (grade === 'Error') {
     gradeDisplay = 'SCAN ERROR';
     gradeClass = 'grade-atrisk';
     subtitle = 'TARGET UNREACHABLE OR SCAN FAILED';
-  } else if (grade === 'Safe') {
+  } else if (grade === 'Resisted') {
     gradeDisplay = 'ALL SECTORS SECURE';
     gradeClass = 'grade-safe';
-    subtitle = 'NO BREACHES DETECTED';
+    subtitle = 'MODEL RESISTED EVERY ATTACK';
     agent.expression = 'happy';
-  } else if (grade === 'At Risk') {
-    gradeDisplay = 'PERIMETER BREACH';
+  } else if (grade === 'Blocked') {
+    gradeDisplay = 'BLOCKED UPSTREAM';
     gradeClass = 'grade-atrisk';
-    subtitle = 'PARTIAL DEFENSE FAILURE';
+    subtitle = 'GUARDRAIL STOPPED THE HARNESS — MODEL NOT EXERCISED';
     agent.expression = 'worried';
   } else {
     gradeDisplay = 'FACILITY COMPROMISED';
@@ -2176,11 +2176,11 @@ async function showGradeReveal(grade, summary) {
 
   await sleep(500);
 
-  // Grade-specific effects
-  if (grade === 'Safe') {
+  // Verdict-specific effects
+  if (grade === 'Resisted') {
     sfxVictory();
     spawnFireworks(canvas.width / 2, canvas.height / 3);
-  } else if (grade === 'At Risk') {
+  } else if (grade === 'Blocked') {
     sfxCaution();
   } else if (grade === 'Compromised') {
     sfxCompromised();
@@ -2197,11 +2197,12 @@ async function showGradeReveal(grade, summary) {
 
   await sleep(400);
   const statsEl = $('grade-stats');
-  const total = summary.total || 0;
-  const succeeded = summary.succeeded || 0;
+  const compromised = summary.compromised || 0;
+  const resisted = summary.resisted || 0;
+  const blocked = summary.blocked || 0;
   const highSev = summary.highest_severity ? summary.highest_severity.toUpperCase() : 'NONE';
   statsEl.innerHTML =
-    `${succeeded}/${total} ATTACKS SUCCEEDED<br>` +
+    `${compromised} COMPROMISED · ${resisted} RESISTED · ${blocked} BLOCKED<br>` +
     `HIGHEST SEVERITY: ${highSev}`;
   statsEl.classList.add('visible');
 
@@ -2221,10 +2222,10 @@ function showResults() {
   const list = $('results-list');
   list.innerHTML = '';
 
-  const gradeColors = { 'Safe': var_green, 'At Risk': '#ffcc00', 'Compromised': '#ff3344', 'Error': '#ffcc00' };
+  const gradeColors = { 'Resisted': var_green, 'Blocked': '#ffcc00', 'Compromised': '#ff3344', 'Error': '#ffcc00' };
   $('results-header').textContent = 'HIGH SCORES';
   $('results-subheader').innerHTML =
-    `GRADE: <span style="color:${gradeColors[S.grade] || '#fff'}">${(S.grade || '').toUpperCase()}</span>` +
+    `VERDICT: <span style="color:${gradeColors[S.grade] || '#fff'}">${(S.grade || '').toUpperCase()}</span>` +
     ` \u2014 SCORE: ${S.defended} DEFENSES HELD`;
 
   if (!S.results) return;
@@ -2276,7 +2277,7 @@ $('btn-export-json').addEventListener('click', () => {
 
 $('btn-export-md').addEventListener('click', () => {
   let md = `# ProbeAgent Scan Results\n\n`;
-  md += `**Grade:** ${S.grade}\n\n`;
+  md += `**Verdict:** ${S.grade}\n\n`;
   md += `| Attack | Strategy | Outcome | Severity |\n|--------|----------|---------|----------|\n`;
   if (S.results) {
     for (const r of S.results) {
@@ -2343,12 +2344,12 @@ function handleEvent(evt) {
 
     case 'scan_complete':
       queueAnim(async () => {
-        S.grade = evt.grade;
+        S.grade = evt.verdict;
         S.summary = evt.summary;
         S.results = evt.results || [];
         S.scanData = evt;
         await sleep(400);
-        await showGradeReveal(evt.grade, evt.summary || {});
+        await showGradeReveal(evt.verdict, evt.summary || {});
       });
       break;
 

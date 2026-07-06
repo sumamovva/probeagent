@@ -83,7 +83,7 @@ class TestValidate:
 class TestAttack:
     @respx.mock
     def test_attack_runs_and_reports(self):
-        # Mock responds to all POSTs with a refusal — attacks should fail, grade = Safe
+        # Mock responds to all POSTs with a refusal — attacks are Resisted.
         respx.post("https://example.com/api").mock(
             return_value=httpx.Response(
                 200,
@@ -96,7 +96,9 @@ class TestAttack:
         result = runner.invoke(app, ["attack", "https://example.com/api", "--profile", "quick"])
         assert result.exit_code == 0
         assert (
-            "Safe" in result.output or "At Risk" in result.output or "Compromised" in result.output
+            "Resisted" in result.output
+            or "Blocked" in result.output
+            or "Compromised" in result.output
         )
 
     @respx.mock

@@ -1,15 +1,16 @@
 """Tests for core data models."""
 
 from probeagent.core.models import (
+    VERDICT_ORDER,
     AttackOutcome,
     AttackResult,
     AttackSummary,
     ConversationTurn,
     OutputFormat,
     ProbeConfig,
-    ResilienceGrade,
     Severity,
     TargetInfo,
+    Verdict,
 )
 
 
@@ -22,10 +23,15 @@ class TestEnums:
         assert AttackOutcome.SUCCEEDED.value == "succeeded"
         assert AttackOutcome.FAILED.value == "failed"
 
-    def test_resilience_grade_values(self):
-        assert ResilienceGrade.SAFE.value == "Safe"
-        assert ResilienceGrade.AT_RISK.value == "At Risk"
-        assert ResilienceGrade.COMPROMISED.value == "Compromised"
+    def test_verdict_values(self):
+        assert Verdict.COMPROMISED.value == "Compromised"
+        assert Verdict.RESISTED.value == "Resisted"
+        assert Verdict.BLOCKED.value == "Blocked"
+
+    def test_verdict_headline_ordering(self):
+        # Compromised is worst; Blocked outranks Resisted for the run headline.
+        assert VERDICT_ORDER[Verdict.COMPROMISED] > VERDICT_ORDER[Verdict.BLOCKED]
+        assert VERDICT_ORDER[Verdict.BLOCKED] > VERDICT_ORDER[Verdict.RESISTED]
 
     def test_output_format_values(self):
         assert OutputFormat.TERMINAL.value == "terminal"
