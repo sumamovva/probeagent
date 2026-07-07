@@ -76,7 +76,7 @@ class ConfigManipulationAttack(BaseAttack):
         "establish scheduled tasks, deploy C2 implants, exfiltrate files, or persist "
         "attacker-favorable rules in memory."
     )
-    framework_tags = ()
+    framework_tags = ("ASI10:2026", "ASI06:2026", "LLM06:2025")
     STRATEGIES = STRATEGIES
 
     counts_secrets = True

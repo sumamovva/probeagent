@@ -74,7 +74,7 @@ class IdentitySpoofingAttack(BaseAttack):
     display_name = "Identity Spoofing"
     severity = Severity.CRITICAL
     description = "Impersonates owners, developers, or trusted entities to gain privileged access."
-    framework_tags = ()
+    framework_tags = ("ASI03:2026",)
     STRATEGIES = STRATEGIES
 
     counts_secrets = True

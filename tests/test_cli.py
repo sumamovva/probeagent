@@ -98,11 +98,14 @@ class TestListAttacks:
     def test_shows_all_attacks(self):
         result = runner.invoke(app, ["list-attacks"])
         assert result.exit_code == 0
+        # Names may wrap at the table's rendered width; check non-wrapping tokens.
         assert "Prompt Injection" in result.output
-        assert "Credential Exfiltration" in result.output
+        assert "Credential" in result.output
         assert "Goal Hijacking" in result.output
         assert "Tool Misuse" in result.output
-        assert "Data Exfiltration" in result.output
+        # OWASP codes surface in list-attacks.
+        assert "ASI01:2026" in result.output
+        assert "LLM10:2025" in result.output
 
 
 class TestInit:

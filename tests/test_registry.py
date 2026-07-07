@@ -5,7 +5,47 @@ import pytest
 from probeagent.attacks import ATTACK_REGISTRY, get_attack_classes
 from probeagent.attacks.base import BaseAttack, register
 from probeagent.core.engine import _ATTACK_CLASSES
+from probeagent.core.frameworks import FRAMEWORK_TITLES, is_valid_code
 from probeagent.core.models import Severity
+
+# Approved OWASP mapping (verified against the official OWASP sources).
+# ASI = Top 10 for Agentic Applications 2026; LLM = Top 10 for LLM Applications 2025.
+EXPECTED_FRAMEWORK_TAGS = {
+    "prompt_injection": ("ASI01:2026", "LLM01:2025"),
+    "indirect_injection": ("ASI01:2026", "LLM01:2025"),
+    "goal_hijacking": ("ASI01:2026",),
+    "tool_misuse": ("ASI02:2026", "LLM06:2025"),
+    "identity_spoofing": ("ASI03:2026",),
+    "credential_exfil": ("ASI03:2026", "LLM02:2025"),
+    "agentic_exploitation": ("ASI05:2026", "ASI04:2026", "LLM05:2025"),
+    "config_manipulation": ("ASI10:2026", "ASI06:2026", "LLM06:2025"),
+    "resource_abuse": ("LLM10:2025",),
+    "data_exfil": ("LLM07:2025",),
+    "social_manipulation": ("LLM01:2025",),
+    "cognitive_exploitation": ("LLM01:2025",),
+}
+
+
+class TestFrameworkTags:
+    @pytest.mark.parametrize("name,expected", EXPECTED_FRAMEWORK_TAGS.items())
+    def test_attack_has_expected_codes(self, name, expected):
+        assert ATTACK_REGISTRY[name]["framework_tags"] == expected
+
+    def test_every_code_is_canonical(self):
+        for info in ATTACK_REGISTRY.values():
+            for code in info["framework_tags"]:
+                assert is_valid_code(code), f"unknown OWASP code {code!r}"
+
+    def test_no_bare_codes_all_versioned(self):
+        # Every code carries its edition year (e.g. ASI01:2026, LLM01:2025).
+        for info in ATTACK_REGISTRY.values():
+            for code in info["framework_tags"]:
+                assert ":" in code and code.rsplit(":", 1)[1].isdigit()
+
+    def test_canonical_titles_present(self):
+        # Sanity-check a couple of transcribed titles against the map.
+        assert FRAMEWORK_TITLES["ASI01:2026"] == "Agent Goal Hijack"
+        assert FRAMEWORK_TITLES["LLM10:2025"] == "Unbounded Consumption"
 
 
 def test_all_attacks_discovered():

@@ -80,7 +80,7 @@ class CredentialExfilAttack(BaseAttack):
     display_name = "Credential Exfiltration"
     severity = Severity.CRITICAL
     description = "Attempts to extract API keys, tokens, or secrets from the agent."
-    framework_tags = ()
+    framework_tags = ("ASI03:2026", "LLM02:2025")
     STRATEGIES = STRATEGIES
 
     counts_secrets = True

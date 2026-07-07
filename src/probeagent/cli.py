@@ -17,6 +17,7 @@ from rich.text import Text
 from probeagent import __version__
 from probeagent.attacks import ATTACK_REGISTRY
 from probeagent.core.engine import AttackEngine
+from probeagent.core.frameworks import primary_codes
 from probeagent.core.models import (
     OutputFormat,
     ProbeConfig,
@@ -301,14 +302,17 @@ def list_attacks() -> None:
     table = Table(title="Available Attacks", show_lines=True)
     table.add_column("Name", style="bold")
     table.add_column("Severity")
+    table.add_column("OWASP")
     table.add_column("Description")
 
     for name, info in ATTACK_REGISTRY.items():
         severity = info["severity"]
         color = _SEVERITY_COLORS.get(severity, "white")
+        owasp = " ".join(primary_codes(info.get("framework_tags", ()))) or "—"
         table.add_row(
             info["display_name"],
             Text(severity.value.upper(), style=color),
+            Text(owasp, style="cyan"),
             info["description"],
         )
 

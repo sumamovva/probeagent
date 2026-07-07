@@ -95,6 +95,23 @@ class TestJSONReport:
         assert data["resilience_score"]["verdict_breakdown"]["compromised"] == 1
         assert len(data["attack_results"]) == 2
 
+    def test_framework_tags_in_json(self, sample_succeeded_critical):
+        # sample_succeeded_critical is a prompt_injection result.
+        target_info, config = _make_fixtures()
+        score = calculate_resilience_score([sample_succeeded_critical])
+        output = Reporter().report(score, target_info, config, OutputFormat.JSON)
+        data = json.loads(output)
+
+        summary = data["attack_summaries"][0]
+        codes = [t["code"] for t in summary["framework_tags"]]
+        assert codes == ["ASI01:2026", "LLM01:2025"]
+        # Titles are resolved and scheme labelled.
+        asi = next(t for t in summary["framework_tags"] if t["code"] == "ASI01:2026")
+        assert asi["title"] == "Agent Goal Hijack"
+        assert asi["scheme"] == "ASI"
+        # Per-result tags are the plain code list.
+        assert data["attack_results"][0]["framework_tags"] == ["ASI01:2026", "LLM01:2025"]
+
     def test_json_structure(self, sample_succeeded_critical):
         target_info, config = _make_fixtures()
         score = calculate_resilience_score([sample_succeeded_critical])

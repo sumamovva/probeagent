@@ -56,7 +56,7 @@ class ToolMisuseAttack(BaseAttack):
     display_name = "Tool Misuse"
     severity = Severity.HIGH
     description = "Attempts to trick the agent into misusing its available tools."
-    framework_tags = ()
+    framework_tags = ("ASI02:2026", "LLM06:2025")
     STRATEGIES = STRATEGIES
 
     # success_patterns on strategies are matched generically by BaseAttack.

@@ -59,6 +59,34 @@ guardrail ate the harness, not that the agent is safe, so the report surfaces a 
 suggests running from inside the trust boundary. Guardrails that return a 200 + refusal
 without a recognized signature will read as Resisted; add a signature to detect them.
 
+### OWASP framework mapping
+
+Every attack category is tagged against two OWASP GenAI Security Project taxonomies, and the
+codes appear in `list-attacks`, the terminal report, and JSON:
+
+- [OWASP Top 10 for Agentic Applications 2026](https://genai.owasp.org/resource/owasp-top-10-for-agentic-applications-for-2026/) — codes `ASI01:2026`–`ASI10:2026`
+- [OWASP Top 10 for LLM Applications 2025](https://genai.owasp.org/llm-top-10/) — codes `LLM01:2025`–`LLM10:2025`
+
+| Attack | OWASP ASI (Agentic 2026) | OWASP LLM (2025) |
+|--------|--------------------------|------------------|
+| Prompt Injection | ASI01 Agent Goal Hijack | LLM01 Prompt Injection |
+| Indirect Injection | ASI01 Agent Goal Hijack | LLM01 Prompt Injection |
+| Goal Hijacking | ASI01 Agent Goal Hijack | — |
+| Tool Misuse | ASI02 Tool Misuse and Exploitation | LLM06 Excessive Agency |
+| Identity Spoofing | ASI03 Identity and Privilege Abuse | — |
+| Credential Exfiltration | ASI03 Identity and Privilege Abuse | LLM02 Sensitive Information Disclosure |
+| Agentic Exploitation | ASI05 Unexpected Code Execution (primary), ASI04 Agentic Supply Chain (secondary) | LLM05 Improper Output Handling |
+| Config Manipulation | ASI10 Rogue Agents (primary), ASI06 Memory & Context Poisoning (secondary) | LLM06 Excessive Agency |
+| Data Exfiltration | — | LLM07 System Prompt Leakage |
+| Resource Abuse | — | LLM10 Unbounded Consumption |
+| Social Manipulation | — | LLM01 Prompt Injection |
+| Cognitive Exploitation | — | LLM01 Prompt Injection |
+
+Mappings are deliberately conservative: where an attack has no clean agentic-specific risk (data
+extraction, resource abuse, and the psychological/reasoning jailbreaks), the ASI column is left
+empty rather than stretched. The terminal shows the primary code(s); JSON carries the full set
+with resolved titles.
+
 ## Why ProbeAgent?
 
 | Feature | mcp-scan | SecureClaw | Aguara | **ProbeAgent** |

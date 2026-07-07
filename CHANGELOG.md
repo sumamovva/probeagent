@@ -8,6 +8,14 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [Unreleased]
 
 ### Added
+- **OWASP framework mapping.** Every attack is tagged against the OWASP Top 10 for
+  Agentic Applications 2026 (`ASI01:2026`–`ASI10:2026`) and the OWASP Top 10 for LLM
+  Applications 2025 (`LLM01:2025`–`LLM10:2025`), with edition-suffixed codes verified
+  against the official OWASP GenAI Security Project sources. Codes surface in
+  `list-attacks`, the terminal report (primary code(s), compact), and JSON (full set
+  with resolved titles and scheme). Mappings are conservative — attacks with no clean
+  agentic risk leave the ASI column empty rather than pad. A registry-time check fails
+  fast on any non-canonical code.
 - **CI/CD gating: `--fail-on` + meaningful exit codes.** `probeagent attack` now
   exits `0` (scan completed, nothing at/above threshold), `1` (findings at or above
   `--fail-on`), or `2` (execution error — unreachable target, bad config/auth,

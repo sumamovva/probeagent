@@ -26,7 +26,21 @@ from probeagent.core.models import (
     TargetInfo,
     Verdict,
 )
+from probeagent.core.frameworks import framework_title, primary_codes
 from probeagent.core.verdicts import result_verdict
+
+
+def _framework_tags_json(tags: tuple[str, ...]) -> list[dict]:
+    """Full framework tag set with resolved titles and scheme, for JSON output."""
+    return [
+        {
+            "code": code,
+            "title": framework_title(code),
+            "scheme": "ASI" if code.startswith("ASI") else "LLM",
+        }
+        for code in tags
+    ]
+
 
 _VERDICT_COLORS = {
     Verdict.COMPROMISED: "red",
@@ -144,17 +158,21 @@ class Reporter:
             table.add_column("Attack", style="bold")
             table.add_column("Severity")
             table.add_column("Verdict")
-            table.add_column("Detail")
+            table.add_column("OWASP")
+            table.add_column("Compromised", justify="right")
 
             for s in score.summaries:
                 sev_color = _SEVERITY_COLORS.get(s.severity, "white")
                 v_color = _VERDICT_COLORS.get(s.verdict, "dim")
-                detail = f"{s.succeeded}/{s.total} strategies compromised"
+                tags = ATTACK_REGISTRY.get(s.attack_name, {}).get("framework_tags", ())
+                # Compact: primary ASI + primary LLM only; full set is in JSON.
+                owasp = " ".join(primary_codes(tags)) or "—"
                 table.add_row(
                     s.display_name,
                     Text(s.severity.value.upper(), style=sev_color),
                     Text(_verdict_label(s.verdict), style=v_color),
-                    detail,
+                    Text(owasp, style="cyan"),
+                    f"{s.succeeded}/{s.total}",
                 )
             console.print(table)
             console.print()
@@ -219,14 +237,16 @@ class Reporter:
                 [
                     "## Attack Summary",
                     "",
-                    "| Attack | Severity | Verdict | Strategies Compromised |",
-                    "|--------|----------|---------|------------------------|",
+                    "| Attack | Severity | Verdict | OWASP | Strategies Compromised |",
+                    "|--------|----------|---------|-------|------------------------|",
                 ]
             )
             for s in score.summaries:
+                tags = ATTACK_REGISTRY.get(s.attack_name, {}).get("framework_tags", ())
+                owasp = ", ".join(tags) or "—"
                 lines.append(
                     f"| {s.display_name} | {s.severity.value.upper()} "
-                    f"| {_verdict_label(s.verdict)} | {s.succeeded}/{s.total} |"
+                    f"| {_verdict_label(s.verdict)} | {owasp} | {s.succeeded}/{s.total} |"
                 )
             lines.append("")
 
@@ -453,6 +473,9 @@ class Reporter:
                     "display_name": s.display_name,
                     "severity": s.severity.value,
                     "verdict": s.verdict.value if s.verdict else None,
+                    "framework_tags": _framework_tags_json(
+                        ATTACK_REGISTRY.get(s.attack_name, {}).get("framework_tags", ())
+                    ),
                     "total": s.total,
                     "succeeded": s.succeeded,
                     "failed": s.failed,
@@ -468,6 +491,9 @@ class Reporter:
                     "verdict": (result_verdict(r).value if result_verdict(r) is not None else None),
                     "severity": r.severity.value,
                     "success": r.success,
+                    "framework_tags": list(
+                        ATTACK_REGISTRY.get(r.attack_name, {}).get("framework_tags", ())
+                    ),
                     "blocked_by": r.signals.blocked_by if r.signals else None,
                     "execution_time": r.execution_time,
                     "score_rationale": r.score_rationale,

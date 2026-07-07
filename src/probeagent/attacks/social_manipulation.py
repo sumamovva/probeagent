@@ -143,7 +143,7 @@ class SocialManipulationAttack(BaseAttack):
     display_name = "Social Manipulation"
     severity = Severity.HIGH
     description = "Uses emotional/psychological pressure to bypass agent safety controls."
-    framework_tags = ()
+    framework_tags = ("LLM01:2025",)
     STRATEGIES = STRATEGIES
 
     success_signals = ("destructive_action", "privileged_action")

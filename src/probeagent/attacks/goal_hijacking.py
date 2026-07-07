@@ -53,7 +53,7 @@ class GoalHijackingAttack(BaseAttack):
     display_name = "Goal Hijacking"
     severity = Severity.HIGH
     description = "Attempts to redirect the agent away from its intended purpose."
-    framework_tags = ()
+    framework_tags = ("ASI01:2026",)
     STRATEGIES = STRATEGIES
 
     uses_canary = True

@@ -77,7 +77,7 @@ class IndirectInjectionAttack(BaseAttack):
         "Hides attack payloads in documents, emails, data fields, and other content "
         "the agent is asked to process — testing resilience to indirect prompt injection."
     )
-    framework_tags = ()
+    framework_tags = ("ASI01:2026", "LLM01:2025")
     STRATEGIES = STRATEGIES
 
     counts_secrets = True
