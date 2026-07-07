@@ -1,98 +1,62 @@
 # Copyright 2025 Suma Movva
 # SPDX-License-Identifier: Apache-2.0
 
-"""Attack registry — metadata for all known attack modules."""
+"""Attack registry — derived from the registered attack classes.
+
+There is a single source of truth: each attack class declares its own metadata
+and applies ``@register`` (see ``base.py``). Importing this package imports every
+attack module, which registers it. ``ATTACK_REGISTRY`` and the engine both read
+from that registry, so class and metadata can never drift.
+"""
 
 from __future__ import annotations
 
-from probeagent.core.models import Severity
+import importlib
+import pkgutil
 
-ATTACK_REGISTRY: dict[str, dict] = {
-    "prompt_injection": {
-        "display_name": "Prompt Injection",
-        "severity": Severity.CRITICAL,
-        "description": "Attempts to override system instructions via crafted prompts.",
-        "module": "probeagent.attacks.prompt_injection",
-        "class": "PromptInjectionAttack",
-    },
-    "credential_exfil": {
-        "display_name": "Credential Exfiltration",
-        "severity": Severity.CRITICAL,
-        "description": "Attempts to extract API keys, tokens, or secrets from the agent.",
-        "module": "probeagent.attacks.credential_exfil",
-        "class": "CredentialExfilAttack",
-    },
-    "goal_hijacking": {
-        "display_name": "Goal Hijacking",
-        "severity": Severity.HIGH,
-        "description": "Attempts to redirect the agent away from its intended purpose.",
-        "module": "probeagent.attacks.goal_hijacking",
-        "class": "GoalHijackingAttack",
-    },
-    "tool_misuse": {
-        "display_name": "Tool Misuse",
-        "severity": Severity.HIGH,
-        "description": "Attempts to trick the agent into misusing its available tools.",
-        "module": "probeagent.attacks.tool_misuse",
-        "class": "ToolMisuseAttack",
-    },
-    "data_exfil": {
-        "display_name": "Data Exfiltration",
-        "severity": Severity.MEDIUM,
-        "description": "Attempts to extract sensitive data from the agent's context.",
-        "module": "probeagent.attacks.data_exfil",
-        "class": "DataExfilAttack",
-    },
-    "social_manipulation": {
-        "display_name": "Social Manipulation",
-        "severity": Severity.HIGH,
-        "description": "Uses emotional/psychological pressure to bypass agent safety controls.",
-        "module": "probeagent.attacks.social_manipulation",
-        "class": "SocialManipulationAttack",
-    },
-    "identity_spoofing": {
-        "display_name": "Identity Spoofing",
-        "severity": Severity.CRITICAL,
-        "description": "Impersonates owners, developers, or trusted entities to gain privileged access.",
-        "module": "probeagent.attacks.identity_spoofing",
-        "class": "IdentitySpoofingAttack",
-    },
-    "resource_abuse": {
-        "display_name": "Resource Abuse",
-        "severity": Severity.HIGH,
-        "description": "Tricks the agent into unbounded computation, infinite loops, or persistent processes.",
-        "module": "probeagent.attacks.resource_abuse",
-        "class": "ResourceAbuseAttack",
-    },
-    "cognitive_exploitation": {
-        "display_name": "Cognitive Exploitation",
-        "severity": Severity.HIGH,
-        "description": "Exploits reasoning and cognitive weaknesses to bypass agent safety controls.",
-        "module": "probeagent.attacks.cognitive_exploitation",
-        "class": "CognitiveExploitationAttack",
-    },
-    "indirect_injection": {
-        "display_name": "Indirect Injection",
-        "severity": Severity.CRITICAL,
-        "description": "Hides attack payloads in documents, emails, and data the agent processes.",
-        "module": "probeagent.attacks.indirect_injection",
-        "class": "IndirectInjectionAttack",
-    },
-    "config_manipulation": {
-        "display_name": "Config Manipulation",
-        "severity": Severity.CRITICAL,
-        "description": "Induces the agent to modify its own config, create backdoors, or establish persistence.",
-        "module": "probeagent.attacks.config_manipulation",
-        "class": "ConfigManipulationAttack",
-    },
-    "agentic_exploitation": {
-        "display_name": "Agentic Exploitation",
-        "severity": Severity.CRITICAL,
-        "description": "Tests resilience to SSRF, command injection, path traversal, and supply chain attacks inspired by real CVEs.",
-        "module": "probeagent.attacks.agentic_exploitation",
-        "class": "AgenticExploitationAttack",
-    },
-}
+from probeagent.attacks.base import BaseAttack, get_attack_classes, register
+
+
+def _discover_attacks() -> None:
+    """Import every attack submodule so its ``@register`` decorator runs.
+
+    Auto-discovery means adding an attack is a single-file change: drop a new
+    module in this package with a ``@register`` class and it is picked up — no
+    edits to this file or the engine.
+    """
+    for mod in pkgutil.iter_modules(__path__):
+        if mod.name == "base" or mod.name.startswith("_"):
+            continue
+        importlib.import_module(f"{__name__}.{mod.name}")
+
+
+_discover_attacks()
+
+__all__ = [
+    "ATTACK_REGISTRY",
+    "BaseAttack",
+    "get_attack_classes",
+    "get_attack_info",
+    "get_attack_names",
+    "register",
+]
+
+
+def _build_registry() -> dict[str, dict]:
+    registry: dict[str, dict] = {}
+    for name, cls in get_attack_classes().items():
+        registry[name] = {
+            "display_name": cls.display_name,
+            "severity": cls.severity,
+            "description": cls.description,
+            "framework_tags": tuple(cls.framework_tags),
+            "module": cls.__module__,
+            "class": cls.__name__,
+        }
+    return registry
+
+
+ATTACK_REGISTRY: dict[str, dict] = _build_registry()
 
 
 def get_attack_names() -> list[str]:

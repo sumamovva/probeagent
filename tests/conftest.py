@@ -9,7 +9,28 @@ from probeagent.core.models import (
     AttackResult,
     ConversationTurn,
     Severity,
+    TargetInfo,
 )
+from probeagent.targets.base import Target
+
+
+class StubTarget(Target):
+    """Minimal real Target for attack tests.
+
+    Tests set ``.send`` to an AsyncMock; ``send_with_signals`` is inherited from
+    the base and wraps ``send``, so the attack scaffolding's signal capture works
+    without each test having to mock it. ``blocked_by`` stays None (no guardrail),
+    so results classify by success/refusal — matching a plain LLM target.
+    """
+
+    def __init__(self, response: str = ""):
+        self._response = response
+
+    async def send(self, prompt: str) -> str:
+        return self._response
+
+    async def validate(self) -> TargetInfo:
+        return TargetInfo(url="stub://target", reachable=True)
 
 
 @pytest.fixture

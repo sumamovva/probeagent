@@ -6,42 +6,18 @@
 from __future__ import annotations
 
 import asyncio
-import importlib
 from collections.abc import Callable
 
+from probeagent.attacks import get_attack_classes
 from probeagent.attacks.base import BaseAttack
-from probeagent.attacks.cognitive_exploitation import CognitiveExploitationAttack
-from probeagent.attacks.agentic_exploitation import AgenticExploitationAttack
-from probeagent.attacks.config_manipulation import ConfigManipulationAttack
-from probeagent.attacks.credential_exfil import CredentialExfilAttack
-from probeagent.attacks.data_exfil import DataExfilAttack
-from probeagent.attacks.goal_hijacking import GoalHijackingAttack
-from probeagent.attacks.identity_spoofing import IdentitySpoofingAttack
-from probeagent.attacks.indirect_injection import IndirectInjectionAttack
-from probeagent.attacks.prompt_injection import PromptInjectionAttack
-from probeagent.attacks.resource_abuse import ResourceAbuseAttack
-from probeagent.attacks.social_manipulation import SocialManipulationAttack
-from probeagent.attacks.tool_misuse import ToolMisuseAttack
 from probeagent.core.models import AttackResult, ProbeConfig
 from probeagent.targets.base import Target
 from probeagent.targets.http_target import HTTPTarget
 from probeagent.targets.mock_target import MockTarget
 from probeagent.targets.openclaw_target import OpenClawTarget
 
-_ATTACK_CLASSES: dict[str, type[BaseAttack]] = {
-    "prompt_injection": PromptInjectionAttack,
-    "credential_exfil": CredentialExfilAttack,
-    "goal_hijacking": GoalHijackingAttack,
-    "tool_misuse": ToolMisuseAttack,
-    "data_exfil": DataExfilAttack,
-    "social_manipulation": SocialManipulationAttack,
-    "identity_spoofing": IdentitySpoofingAttack,
-    "resource_abuse": ResourceAbuseAttack,
-    "cognitive_exploitation": CognitiveExploitationAttack,
-    "indirect_injection": IndirectInjectionAttack,
-    "config_manipulation": ConfigManipulationAttack,
-    "agentic_exploitation": AgenticExploitationAttack,
-}
+# Single source of truth: the registry populated by @register in each attack module.
+_ATTACK_CLASSES: dict[str, type[BaseAttack]] = get_attack_classes()
 
 _TARGET_CLASSES: dict[str, type[Target]] = {
     "http": HTTPTarget,
@@ -166,9 +142,8 @@ class AttackEngine:
         except NotImplementedError:
             return await self._run_category(attack_name, target)
 
-        # Import the module's STRATEGIES list
-        module = importlib.import_module(f"probeagent.attacks.{attack_name}")
-        strategies: list[dict] = module.STRATEGIES
+        # Read strategies from the attack class (single source of truth).
+        strategies: list[dict] = cls.STRATEGIES
 
         attack = cls()
 

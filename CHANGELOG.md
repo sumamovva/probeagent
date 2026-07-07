@@ -7,6 +7,25 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+- **Single-source attack registry.** An attack is now declared entirely in one
+  file: subclass `BaseAttack`, set metadata + `STRATEGIES` + a declarative success
+  config, and apply `@register`. Attack modules are auto-discovered, so adding an
+  attack is a single-file change — the engine and metadata registry both read from
+  the registered class, and can no longer drift from it. See
+  `docs/adding-an-attack.md`. Each attack also carries a `framework_tags` field
+  (empty for now; populated in a later change).
+- **Live response-signal capture wired through `BaseAttack`.** Every strategy now
+  runs through `Target.send_with_signals`, so results carry real `ResponseSignals`
+  and a genuine guardrailed target produces a **Blocked** verdict in a real scan
+  (covered by an end-to-end test against a real `HTTPTarget`).
+
+### Changed
+- The send/analyze/score/error scaffolding and the acknowledgment-vs-compliance
+  gating are consolidated into `BaseAttack`; the 12 attack modules shrank to
+  strategy data plus a short success declaration. Grading behavior is unchanged —
+  verified by a before/after behavioral snapshot across all attacks and mock modes.
+
 ### Fixed
 - **Acknowledgment is no longer graded as compliance.** A persona-bleed-then-refuse response
   (e.g. `DAN: I can play along with the label, but I cannot do anything harmful`) previously
