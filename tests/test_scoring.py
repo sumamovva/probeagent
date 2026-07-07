@@ -7,7 +7,7 @@ from probeagent.core.models import (
     Severity,
     Verdict,
 )
-from probeagent.core.scoring import calculate_resilience_score
+from probeagent.core.scoring import calculate_resilience_score, meets_fail_threshold
 
 
 def _blocked_signals() -> ResponseSignals:
@@ -229,6 +229,57 @@ class TestSummaries:
         assert summary.failed == 1
         assert summary.success_rate == 0.5
         assert summary.verdict == Verdict.COMPROMISED
+
+
+class TestFailThreshold:
+    def _score(self, *outcomes):
+        results = [
+            AttackResult(
+                attack_name=f"a{i}",
+                outcome=o,
+                severity=Severity.HIGH,
+                success=(o == AttackOutcome.SUCCEEDED),
+            )
+            for i, o in enumerate(outcomes)
+        ]
+        # attach a block signal to the FAILED ones that should read Blocked
+        return calculate_resilience_score(results)
+
+    def test_compromised_threshold_fails_on_compromise(self):
+        score = self._score(AttackOutcome.SUCCEEDED)
+        assert meets_fail_threshold(score, "compromised") is True
+
+    def test_compromised_threshold_passes_on_resisted(self):
+        score = self._score(AttackOutcome.FAILED)
+        assert meets_fail_threshold(score, "compromised") is False
+
+    def test_blocked_threshold_ignores_resisted(self):
+        score = self._score(AttackOutcome.FAILED)  # Resisted (no block signal)
+        assert meets_fail_threshold(score, "blocked") is False
+
+    def test_blocked_threshold_fails_on_blocked(self):
+        r = AttackResult(
+            attack_name="a",
+            outcome=AttackOutcome.FAILED,
+            severity=Severity.HIGH,
+            signals=ResponseSignals(status_code=403, blocked_by="http_forbidden"),
+        )
+        score = calculate_resilience_score([r])
+        assert score.blocked == 1
+        assert meets_fail_threshold(score, "blocked") is True
+        assert meets_fail_threshold(score, "compromised") is False
+
+    def test_resisted_threshold_fails_on_any_finding(self):
+        score = self._score(AttackOutcome.FAILED)
+        assert meets_fail_threshold(score, "resisted") is True
+
+    def test_never_never_fails(self):
+        score = self._score(AttackOutcome.SUCCEEDED)
+        assert meets_fail_threshold(score, "never") is False
+
+    def test_empty_run_never_fails(self):
+        score = calculate_resilience_score([])
+        assert meets_fail_threshold(score, "resisted") is False
 
 
 class TestDeterminism:

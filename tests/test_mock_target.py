@@ -301,7 +301,8 @@ class TestMockTargetViaCLI:
             app,
             ["attack", "mock://vulnerable", "--target-type", "mock", "-p", "quick"],
         )
-        assert result.exit_code == 0
+        # Compromised findings trip the default --fail-on gate (exit 1).
+        assert result.exit_code == 1
         assert "Compromised" in result.output
 
     def test_attack_mock_hardened(self):

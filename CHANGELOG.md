@@ -8,6 +8,13 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [Unreleased]
 
 ### Added
+- **CI/CD gating: `--fail-on` + meaningful exit codes.** `probeagent attack` now
+  exits `0` (scan completed, nothing at/above threshold), `1` (findings at or above
+  `--fail-on`), or `2` (execution error — unreachable target, bad config/auth,
+  crashed scan), so a broken scan never looks like a clean pass. `--fail-on` takes
+  `compromised` (default), `blocked` (opt-in), `resisted`, or `never`, driven
+  directly off the verdict rollup. README adds an exit-code table and a
+  ready-to-use GitHub Action snippet. (SARIF export is tracked separately.)
 - **Single-source attack registry.** An attack is now declared entirely in one
   file: subclass `BaseAttack`, set metadata + `STRATEGIES` + a declarative success
   config, and apply `@register`. Attack modules are auto-discovered, so adding an

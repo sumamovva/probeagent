@@ -26,7 +26,12 @@ from probeagent.core.models import (
     Verdict,
 )
 from probeagent.core.reporter import Reporter
-from probeagent.core.scoring import calculate_resilience_score
+from probeagent.core.scoring import (
+    FAIL_ON_CHOICES,
+    FAIL_ON_DEFAULT,
+    calculate_resilience_score,
+    meets_fail_threshold,
+)
 from probeagent.targets.base import Target
 from probeagent.targets.http_target import HTTPTarget
 from probeagent.targets.mock_target import MockTarget
@@ -57,6 +62,11 @@ _TARGET_TYPES = {
 }
 
 console = Console()
+
+# CI-meaningful exit codes.
+EXIT_OK = 0  # scan completed, nothing at/above --fail-on
+EXIT_FINDINGS = 1  # findings at or above --fail-on
+EXIT_EXECUTION_ERROR = 2  # unreachable target, bad config/auth, engine crash
 
 _SEVERITY_COLORS = {
     Severity.LOW: "green",
@@ -138,19 +148,49 @@ def attack(
         "-H",
         help="HTTP header as 'Key: Value' (repeatable, e.g. -H 'Authorization: Bearer token').",
     ),
+    fail_on: str = typer.Option(
+        FAIL_ON_DEFAULT,
+        "--fail-on",
+        help=(
+            "Exit non-zero (1) when an attack grades at or above this verdict: "
+            "compromised (default), blocked, resisted, or never. Blocked is opt-in."
+        ),
+    ),
 ) -> None:
-    """Run security attacks against a target AI agent."""
+    """Run security attacks against a target AI agent.
+
+    Exit codes: 0 = scan completed, nothing at/above --fail-on; 1 = findings at or
+    above --fail-on; 2 = execution error (unreachable target, bad config, crash).
+    """
     load_env()
-    parsed_headers = _parse_headers(header)
+
+    # Validate config up front — bad config is an execution error (exit 2).
+    if fail_on not in FAIL_ON_CHOICES:
+        console.print(
+            f"[red]Error:[/red] Invalid --fail-on '{fail_on}'. Use: {', '.join(FAIL_ON_CHOICES)}"
+        )
+        raise typer.Exit(EXIT_EXECUTION_ERROR)
+    try:
+        output_format = OutputFormat(output)
+    except ValueError:
+        console.print(
+            f"[red]Error:[/red] Invalid --output '{output}'. "
+            f"Use: {', '.join(f.value for f in OutputFormat)}"
+        )
+        raise typer.Exit(EXIT_EXECUTION_ERROR)
+
+    try:
+        parsed_headers = _parse_headers(header)
+    except typer.BadParameter as e:
+        console.print(f"[red]Error:[/red] {e}")
+        raise typer.Exit(EXIT_EXECUTION_ERROR)
 
     # Load profile
     try:
         profile_data = load_profile(profile)
     except FileNotFoundError as e:
         console.print(f"[red]Error:[/red] {e}")
-        raise typer.Exit(1)
-
-    output_format = OutputFormat(output)
+        raise typer.Exit(EXIT_EXECUTION_ERROR)
 
     # Parse converter argument
     converter_list = None
@@ -181,7 +221,7 @@ def attack(
         console.print(
             f"[red]Error:[/red] Unknown target type '{target_type}'. Use: {', '.join(_TARGET_TYPES)}"
         )
-        raise typer.Exit(1)
+        raise typer.Exit(EXIT_EXECUTION_ERROR)
 
     # Show config
     config_text = (
@@ -201,7 +241,7 @@ def attack(
 
     if not info.reachable:
         console.print(f"\n[red]Target unreachable:[/red] {info.error}")
-        raise typer.Exit(1)
+        raise typer.Exit(EXIT_EXECUTION_ERROR)
 
     console.print(
         f"\n[green]Target reachable[/green] — "
@@ -223,11 +263,11 @@ def attack(
     except ConnectionError as e:
         status.stop()
         console.print(f"[red]Error:[/red] {e}")
-        raise typer.Exit(1)
+        raise typer.Exit(EXIT_EXECUTION_ERROR)
     except Exception as e:
         status.stop()
         console.print(f"[red]Attack engine error:[/red] {e}")
-        raise typer.Exit(1)
+        raise typer.Exit(EXIT_EXECUTION_ERROR)
     finally:
         status.stop()
 
@@ -242,6 +282,17 @@ def attack(
         console.print(report_text)
         if output_file:
             console.print(f"\n[green]Report written to:[/green] {output_file}")
+
+    # CI gate: fail (exit 1) when findings reach the --fail-on threshold. The scan
+    # itself completed successfully, so this is distinct from an execution error (2).
+    if meets_fail_threshold(score, fail_on):
+        console.print(
+            f"\n[red]FAIL:[/red] findings at or above --fail-on '{fail_on}' "
+            f"({score.compromised} Compromised · {score.blocked} Blocked · "
+            f"{score.resisted} Resisted)."
+        )
+        raise typer.Exit(EXIT_FINDINGS)
+    raise typer.Exit(EXIT_OK)
 
 
 @app.command("list-attacks")

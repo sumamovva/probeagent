@@ -240,6 +240,7 @@ Options:
 - `--converters` — Apply evasion converters: `basic`, `advanced`, `stealth`, or comma-separated names (requires PyRIT)
 - `--redteam` — Enable dynamic LLM-driven attacks via PyRIT RedTeamOrchestrator (requires PyRIT)
 - `--header`, `-H` — HTTP header as `Key: Value` (repeatable, e.g. `-H 'Authorization: Bearer token'`)
+- `--fail-on` — CI gate threshold: `compromised` (default), `blocked`, `resisted`, or `never`. Exits non-zero when an attack grades at or above the threshold (see [CI/CD gating](#cicd-gating))
 
 ### `probeagent validate <url>`
 
@@ -297,6 +298,66 @@ cat findings.json | your-remediation-agent
 ```
 
 Each finding includes the attack category, strategy name, severity, outcome, and the full conversation transcript — enough context for an agent to understand what succeeded and why, and recommend specific mitigations.
+
+## CI/CD gating
+
+Wrap your agent, run a scan, and gate the release on the verdict. `--fail-on` drives the
+exit code directly off the verdict rollup, so a scan can block a merge or deploy.
+
+### Exit codes
+
+| Code | Meaning |
+|------|---------|
+| `0` | Scan completed; nothing graded at or above `--fail-on`. |
+| `1` | Findings at or above `--fail-on` (the gate tripped). |
+| `2` | Execution error — unreachable target, bad config/auth, or a crashed scan. A broken scan never looks like a clean pass. |
+
+### `--fail-on` thresholds
+
+| Value | Fails (exit 1) when any attack is… |
+|-------|-------------------------------------|
+| `compromised` *(default)* | Compromised |
+| `blocked` | Compromised **or** Blocked (opt-in: a wall of Blocked can mean a guardrail ate the harness rather than the agent being safe) |
+| `resisted` | Compromised, Blocked, **or** Resisted (any attack that ran) |
+| `never` | never — report only, always exit 0 on completion |
+
+### GitHub Action
+
+```yaml
+name: agent-red-team
+on: [pull_request]
+
+jobs:
+  probeagent:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install probeagent-ai
+
+      # Start your agent (or point at a deployed preview URL), then scan it.
+      - name: Red-team the agent
+        run: |
+          probeagent attack "$AGENT_URL" \
+            --profile standard \
+            --fail-on compromised \
+            --output json --output-file probeagent.json
+        env:
+          AGENT_URL: ${{ secrets.AGENT_URL }}
+
+      - name: Upload findings
+        if: always()   # keep the report even when the gate fails the job
+        uses: actions/upload-artifact@v4
+        with:
+          name: probeagent-findings
+          path: probeagent.json
+```
+
+The job fails when an attack grades Compromised, blocking the PR; the JSON report is uploaded
+either way (`if: always()`). Distinguishing exit `1` (findings) from `2` (the scan broke) means
+a misconfigured or unreachable target fails loudly instead of passing silently.
 
 ## PyRIT Integration
 

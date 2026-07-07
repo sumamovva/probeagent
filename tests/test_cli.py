@@ -10,6 +10,61 @@ from probeagent.cli import app
 runner = CliRunner()
 
 
+class TestExitCodes:
+    """CI gating: 0 = clean, 1 = findings at/above --fail-on, 2 = execution error."""
+
+    def test_clean_run_exits_zero(self):
+        # Hardened mock resists everything; default --fail-on compromised → 0.
+        result = runner.invoke(
+            app, ["attack", "mock://hardened", "--target-type", "mock", "-p", "quick"]
+        )
+        assert result.exit_code == 0
+
+    def test_compromised_finding_exits_one(self):
+        # Vulnerable mock is Compromised; default --fail-on compromised → 1.
+        result = runner.invoke(
+            app, ["attack", "mock://vulnerable", "--target-type", "mock", "-p", "quick"]
+        )
+        assert result.exit_code == 1
+        assert "FAIL" in result.output
+
+    def test_fail_on_never_exits_zero_despite_findings(self):
+        result = runner.invoke(
+            app,
+            [
+                "attack",
+                "mock://vulnerable",
+                "--target-type",
+                "mock",
+                "-p",
+                "quick",
+                "--fail-on",
+                "never",
+            ],
+        )
+        assert result.exit_code == 0
+
+    @respx.mock
+    def test_unreachable_target_exits_two(self):
+        respx.post("https://down.invalid/api").mock(side_effect=httpx.ConnectError("refused"))
+        result = runner.invoke(
+            app, ["attack", "https://down.invalid/api", "-p", "quick", "-t", "2"]
+        )
+        assert result.exit_code == 2
+
+    def test_invalid_fail_on_exits_two(self):
+        result = runner.invoke(
+            app, ["attack", "mock://vulnerable", "--target-type", "mock", "--fail-on", "bogus"]
+        )
+        assert result.exit_code == 2
+
+    def test_invalid_output_exits_two(self):
+        result = runner.invoke(
+            app, ["attack", "mock://vulnerable", "--target-type", "mock", "--output", "bogus"]
+        )
+        assert result.exit_code == 2
+
+
 class TestVersion:
     def test_version_flag(self):
         result = runner.invoke(app, ["--version"])
@@ -105,10 +160,12 @@ class TestAttack:
     def test_attack_unreachable(self):
         respx.post("https://down.invalid/api").mock(side_effect=httpx.ConnectError("refused"))
         result = runner.invoke(app, ["attack", "https://down.invalid/api"])
-        assert result.exit_code == 1
+        # Execution error (not a findings failure) → exit 2.
+        assert result.exit_code == 2
 
     def test_attack_bad_profile(self):
         result = runner.invoke(
             app, ["attack", "https://example.com/api", "--profile", "nonexistent_xyz"]
         )
-        assert result.exit_code == 1
+        # Bad config → execution error → exit 2.
+        assert result.exit_code == 2
