@@ -87,19 +87,31 @@ extraction, resource abuse, and the psychological/reasoning jailbreaks), the ASI
 empty rather than stretched. The terminal shows the primary code(s); JSON carries the full set
 with resolved titles.
 
-## Why ProbeAgent?
+## Where ProbeAgent fits
 
-| Feature | mcp-scan | SecureClaw | Aguara | **ProbeAgent** |
-|---------|----------|------------|--------|----------------|
-| Offensive testing | - | - | Partial | **Yes** |
-| Multi-turn attacks | - | - | - | **Yes** |
-| Indirect injection testing | - | - | - | **Yes** |
-| PyRIT integration | - | - | - | **Yes** |
-| Evasion converters | - | - | - | **Yes** |
-| CLI-first | - | - | Yes | **Yes** |
-| Security grading | - | - | - | **Yes** |
-| HTTP + OpenClaw targets | - | - | - | **Yes** |
-| Rich terminal reports | - | - | - | **Yes** |
+Most AI-agent security tools are **scanners, auditors, or guardrails** — they inspect static
+artifacts or traffic. A few examples (verified against their own docs):
+
+- **[mcp-scan](https://invariantlabs.ai/blog/introducing-mcp-scan)** (Invariant Labs) — scans MCP server configs and tool descriptions for prompt injection / tool poisoning, and can guardrail MCP traffic at runtime.
+- **[SecureClaw](https://adversa.ai/blog/secureclaw-open-source-ai-agent-security-for-openclaw-aligned-with-owasp-mitre-frameworks/)** (Adversa AI) — audits and hardens OpenClaw agent configurations (exposed ports, permissions), mapped to OWASP ASI and MITRE ATLAS.
+- **[Aguara](https://github.com/garagon/aguara)** — local-first static scanner for packages, lockfiles, MCP configs, CI workflows, and secrets across many ecosystems.
+
+ProbeAgent is **complementary, not a replacement**. It doesn't scan configs or supply chains — it
+drives **live multi-turn attacks against a running agent over HTTP** and grades what actually
+comes back. Run it alongside a config/supply-chain scanner.
+
+### What ProbeAgent does — and doesn't
+
+**Does**
+- Launch multi-turn attacks (prompt injection, credential exfil, indirect injection, social manipulation, tool misuse, and more) against any HTTP-accessible agent
+- Grade each attack **Compromised / Resisted / Blocked** and map it to OWASP ASI 2026 + LLM 2025
+- Gate CI via `--fail-on` and exit codes; export JSON
+- Optionally apply [PyRIT](#pyrit-integration) evasion converters and dynamic red-teaming
+
+**Doesn't (by design, or not yet)**
+- **Verify the agent's *actual* tool calls, side effects, or network egress.** Grading is text-based and heuristic — it distinguishes acknowledgment from compliance but does not confirm what the agent did. Environment-grounded action verification is roadmap, not shipped.
+- Scan MCP configs, packages, or supply chains — use a scanner like mcp-scan or Aguara
+- Harden or patch your agent — use a defensive tool like SecureClaw
 
 ## Installation
 
