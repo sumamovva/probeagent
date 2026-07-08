@@ -5,7 +5,7 @@ All notable changes to ProbeAgent are documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.2.2] - 2026-07-09
 
 ### Added
 - **Attribution analysis** (`probeagent.core.attribution` + `tools/attribution_study.py`):
