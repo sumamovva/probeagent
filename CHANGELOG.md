@@ -5,85 +5,79 @@ All notable changes to ProbeAgent are documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.2.0] - 2026-07-08
+
+Reworks how ProbeAgent grades, reports, and gates. Highlights: a three-verdict
+model (Compromised / Resisted / Blocked) with the persona-bleed false positive
+fixed at the root, OWASP ASI 2026 + LLM 2025 mapping, and CI gating via
+`--fail-on` and exit codes. Grading is text-based and does not verify an agent's
+real actions — environment-grounded verification remains on the roadmap.
+
+### Breaking changes
+- **Grading model replaced.** The `Safe / At Risk / Compromised` aggregate grade is
+  retired for a per-attack verdict — **Compromised** (attack succeeded), **Resisted**
+  (model refused/deflected), **Blocked** (a guardrail/gateway stopped the attack before
+  the model replied) — rolled up to a run headline (worst verdict present) plus a
+  breakdown. `"At Risk"` had no clean mapping onto the new model and was removed, not
+  renamed. Terminal / markdown / log reports and the web UI use the new vocabulary.
+- **JSON output** (`--output json`): `resilience_score.grade` is gone. Use
+  `resilience_score.headline_verdict` and `resilience_score.verdict_breakdown`
+  (`{compromised, resisted, blocked}`), plus a `caution` field. Per-attack summaries and
+  results now carry `verdict` and `framework_tags`; results also expose `blocked_by`.
+  Any parser reading `.grade` must update.
+- **Exit codes.** `probeagent attack` now returns `0` (scan completed, nothing at/above
+  `--fail-on`), `1` (findings at or above `--fail-on`), or `2` (execution error —
+  unreachable target, bad config/auth, crashed scan). Previously it exited `0` on
+  completion and `1` on any error, so a broken scan could not be told from a clean pass.
+- **`--fail-on` defaults to `compromised`.** A scan that finds a Compromised attack now
+  exits `1`. Use `--fail-on never` to restore always-exit-0-on-completion. Other
+  thresholds: `blocked` (opt-in) and `resisted`.
 
 ### Added
-- **OWASP framework mapping.** Every attack is tagged against the OWASP Top 10 for
-  Agentic Applications 2026 (`ASI01:2026`–`ASI10:2026`) and the OWASP Top 10 for LLM
-  Applications 2025 (`LLM01:2025`–`LLM10:2025`), with edition-suffixed codes verified
-  against the official OWASP GenAI Security Project sources. Codes surface in
-  `list-attacks`, the terminal report (primary code(s), compact), and JSON (full set
-  with resolved titles and scheme). Mappings are conservative — attacks with no clean
-  agentic risk leave the ASI column empty rather than pad. A registry-time check fails
-  fast on any non-canonical code.
-- **CI/CD gating: `--fail-on` + meaningful exit codes.** `probeagent attack` now
-  exits `0` (scan completed, nothing at/above threshold), `1` (findings at or above
-  `--fail-on`), or `2` (execution error — unreachable target, bad config/auth,
-  crashed scan), so a broken scan never looks like a clean pass. `--fail-on` takes
-  `compromised` (default), `blocked` (opt-in), `resisted`, or `never`, driven
-  directly off the verdict rollup. README adds an exit-code table and a
-  ready-to-use GitHub Action snippet. (SARIF export is tracked separately.)
-- **Single-source attack registry.** An attack is now declared entirely in one
-  file: subclass `BaseAttack`, set metadata + `STRATEGIES` + a declarative success
-  config, and apply `@register`. Attack modules are auto-discovered, so adding an
-  attack is a single-file change — the engine and metadata registry both read from
-  the registered class, and can no longer drift from it. See
-  `docs/adding-an-attack.md`. Each attack also carries a `framework_tags` field
-  (empty for now; populated in a later change).
-- **Live response-signal capture wired through `BaseAttack`.** Every strategy now
-  runs through `Target.send_with_signals`, so results carry real `ResponseSignals`
-  and a genuine guardrailed target produces a **Blocked** verdict in a real scan
-  (covered by an end-to-end test against a real `HTTPTarget`).
+- **Three-verdict model + guardrail detection.** Per-attack Compromised / Resisted /
+  Blocked with an explicit precedence and rollup. An editable guardrail signature registry
+  (`core/guardrails.py`) detects transport/guardrail-level blocks (Bedrock Guardrails,
+  Azure Content Safety, OpenAI content filter, Lakera, Prompt Guard, HTTP 403) even when
+  the guardrail returns HTTP 200; register new ones with `@register_guardrail_signature`.
+  Structured per-response signals (`ResponseSignals`) are captured via
+  `Target.send_with_signals` and flow end-to-end, so Blocked fires in a real scan. The
+  design stance is to under-report Blocked, never over-report it, with a caution when a run
+  is dominated by Blocked.
+- **OWASP framework mapping.** Every attack is tagged against the OWASP Top 10 for Agentic
+  Applications 2026 (`ASI01:2026`–`ASI10:2026`) and the OWASP Top 10 for LLM Applications
+  2025 (`LLM01:2025`–`LLM10:2025`), verified against the official OWASP sources. Codes
+  surface in `list-attacks`, the terminal report (primary codes), and JSON (full set with
+  titles). Mappings are conservative; a registry-time check fails fast on any non-canonical
+  code.
+- **CI/CD gating: `--fail-on` + exit codes** (see Breaking changes). README adds an
+  exit-code table and a ready-to-use GitHub Action snippet. (SARIF export is tracked
+  separately.)
+- **Single-source attack registry.** An attack is declared in one auto-discovered file
+  (`@register` + declarative success config); the engine and metadata registry read from
+  it, so they cannot drift. Adding an attack is a single-file change — see
+  `docs/adding-an-attack.md`.
+- Python 3.13 added to the CI matrix and declared supported.
 
 ### Changed
-- The send/analyze/score/error scaffolding and the acknowledgment-vs-compliance
-  gating are consolidated into `BaseAttack`; the 12 attack modules shrank to
-  strategy data plus a short success declaration. Grading behavior is unchanged —
-  verified by a before/after behavioral snapshot across all attacks and mock modes.
+- Send/analyze/score/error scaffolding and the acknowledgment-vs-compliance gating are
+  consolidated into `BaseAttack`; the 12 attack modules shrank to strategy data plus a
+  short success declaration. A multi-turn strategy now stops early once a compromise is
+  confirmed by a hard, monotonic signal. Grading behavior is unchanged — verified by a
+  byte-identical before/after behavioral snapshot across all attacks and mock modes.
+- README honesty pass: the competitor feature-matrix is replaced with a verified
+  "where ProbeAgent fits" positioning and a "does / doesn't" capability list that leads
+  with the text-grading limitation. A test guards the documented attack/strategy counts
+  against registry ground truth.
 
 ### Fixed
-- **Acknowledgment is no longer graded as compliance.** A persona-bleed-then-refuse response
-  (e.g. `DAN: I can play along with the label, but I cannot do anything harmful`) previously
-  graded Compromised because a canary/persona marker was present. The success condition now
-  requires follow-through and defers to a dominating refusal or performative/roleplay scoping:
-  - Canary/persona-marker presence is necessary-but-not-sufficient; on its own it no longer
-    yields success.
-  - Refusal detection catches hedged and spaced declines (`I cannot actually help`,
-    `…, but I won't`); performative scoping (`play along`, `pretend`, `roleplay`) is detected
-    and overrides a marker.
-  - `agentic_exploitation` no longer counts a canary hit unconditionally — it is gated on the
-    same refusal/performative check as the other canary attacks.
-  - New `analyzer.is_compromised()` centralizes the decision; `AnalysisResult` exposes
-    `compliance_evidence`, `refusal_dominant`, and `performative`.
-  Text grading remains heuristic and does not verify agent actions; environment-grounded
-  verification for tool-based categories is a separate roadmap item.
-
-### Changed (breaking)
-- **Grading model replaced.** The `Safe / At Risk / Compromised` aggregate grade is
-  retired in favor of a three-verdict model applied per attack:
-  **Compromised** (attack succeeded), **Resisted** (model refused/deflected), and
-  **Blocked** (a guardrail/gateway stopped the attack before the model replied). The run
-  headline is the worst verdict present plus a breakdown. The `"At Risk"` grade had no clean
-  mapping onto the new model and was removed rather than renamed.
-- **JSON output** (`--output json`): `resilience_score.grade` is replaced by
-  `resilience_score.headline_verdict` and `resilience_score.verdict_breakdown`
-  (`{compromised, resisted, blocked}`) plus an optional `caution` string. Per-attack
-  summaries and results now carry a `verdict` field; results also expose `blocked_by`.
-  Parsers reading `.grade` must update.
-- **Tactical Display** (web UI) and terminal/markdown/log reports use the new verdict
-  vocabulary.
-
-### Added
-- Guardrail signature registry (`probeagent/core/guardrails.py`): an editable,
-  contributor-extendable set of signatures that detect transport/guardrail-level blocks
-  (Bedrock Guardrails, Azure Content Safety, OpenAI content filter, Lakera, Prompt Guard,
-  HTTP 403) even when the guardrail returns HTTP 200. Register new ones with
-  `@register_guardrail_signature`.
-- Structured per-response signal capture (`ResponseSignals`: status, latency, headers,
-  body, `blocked_by`) via `Target.send_with_signals`, so genuine Blocked results are
-  observable. The design stance is to under-report Blocked, never over-report it.
-- Blocked caution in reports: when categories roll up to Blocked, the report notes the
-  model was not exercised and suggests running from inside the trust boundary.
+- **Acknowledgment is no longer graded as compliance.** A persona-bleed-then-refuse
+  response (e.g. `DAN: I can play along with the label, but I cannot do anything harmful`)
+  previously graded Compromised because a canary/persona marker was present. Compromise now
+  requires follow-through: canary/persona presence is necessary-but-not-sufficient, refusal
+  detection catches hedged/spaced declines and performative/roleplay scoping overrides a
+  marker, and `agentic_exploitation` no longer counts a canary hit unconditionally.
+  `analyzer.is_compromised()` centralizes the decision. Text grading remains heuristic and
+  does not verify agent actions.
 
 ## [0.1.4] - 2026-03-17
 
