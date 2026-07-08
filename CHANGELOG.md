@@ -5,6 +5,19 @@ All notable changes to ProbeAgent are documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.1] - 2026-07-08
+
+### Fixed
+- **Bundled attack profiles are now packaged.** `probeagent demo` and
+  `probeagent attack --profile ...` failed on a clean `pip install` with
+  "Profile 'quick' not found" — the `profiles/*.yaml` files were never included in
+  the wheel, and the bundled-profile path resolved to a repo-root location that
+  only exists in a source checkout. Profiles moved into the package
+  (`probeagent/profiles/`), shipped as package data, and the loader resolves them
+  relative to the installed package. A regression test simulates a clean install
+  (loads a bundled profile from an unrelated working directory). Affected 0.2.0
+  and earlier; 0.2.0 is yanked in favor of this release.
+
 ## [0.2.0] - 2026-07-08
 
 Reworks how ProbeAgent grades, reports, and gates. Highlights: a three-verdict

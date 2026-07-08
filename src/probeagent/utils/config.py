@@ -32,7 +32,9 @@ def get_api_key(provider: str = "openai") -> str | None:
     return os.environ.get("OPENAI_API_KEY") or os.environ.get("AZURE_OPENAI_API_KEY")
 
 
-_BUNDLED_PROFILES = Path(__file__).resolve().parent.parent.parent.parent / "profiles"
+# Profiles are bundled inside the package (src/probeagent/profiles/), so this
+# resolves correctly whether running from a source checkout or an installed wheel.
+_BUNDLED_PROFILES = Path(__file__).resolve().parent.parent / "profiles"
 
 
 def _profile_search_paths(name: str) -> list[Path]:

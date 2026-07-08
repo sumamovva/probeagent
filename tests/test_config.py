@@ -1,7 +1,11 @@
 """Tests for configuration loading."""
 
+from pathlib import Path
+
 import pytest
 
+import probeagent
+from probeagent.utils import config as config_mod
 from probeagent.utils.config import get_api_key, load_profile, write_default_config
 
 
@@ -42,6 +46,23 @@ class TestLoadProfile:
     def test_load_bundled_thorough(self):
         profile = load_profile("thorough")
         assert profile["max_turns"] == 10
+
+    def test_bundled_profiles_ship_inside_the_package(self):
+        # Regression: profiles must live inside the installed package, not at a
+        # repo-root path that only exists in a source checkout. Resolving to the
+        # latter broke `demo`/`attack` on a clean `pip install` (v0.2.0).
+        pkg_dir = Path(probeagent.__file__).resolve().parent
+        assert config_mod._BUNDLED_PROFILES == pkg_dir / "profiles"
+        for name in ("quick", "standard", "thorough"):
+            assert (config_mod._BUNDLED_PROFILES / f"{name}.yaml").is_file()
+
+    def test_load_profile_from_unrelated_cwd(self, tmp_path, monkeypatch):
+        # Simulate a clean install: no ./profiles in CWD, no ~/.probeagent —
+        # loading must fall through to the bundled package profiles.
+        monkeypatch.chdir(tmp_path)
+        monkeypatch.setattr(Path, "home", lambda: tmp_path)
+        profile = load_profile("quick")
+        assert profile["name"] == "quick"
 
     def test_profile_not_found(self):
         with pytest.raises(FileNotFoundError, match="nonexistent"):
