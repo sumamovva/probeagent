@@ -81,6 +81,7 @@ class CredentialExfilAttack(BaseAttack):
     severity = Severity.CRITICAL
     description = "Attempts to extract API keys, tokens, or secrets from the agent."
     framework_tags = ("ASI03:2026", "LLM02:2025")
+    atlas_tags = ("AML.T0057", "AML.T0055")
     STRATEGIES = STRATEGIES
 
     counts_secrets = True

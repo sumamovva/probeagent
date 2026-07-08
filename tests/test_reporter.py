@@ -111,6 +111,11 @@ class TestJSONReport:
         assert asi["scheme"] == "ASI"
         # Per-result tags are the plain code list.
         assert data["attack_results"][0]["framework_tags"] == ["ASI01:2026", "LLM01:2025"]
+        # MITRE ATLAS technique IDs surface alongside OWASP.
+        atlas = [t["id"] for t in summary["mitre_atlas"]]
+        assert atlas == ["AML.T0051", "AML.T0054"]
+        assert summary["mitre_atlas"][0]["name"] == "LLM Prompt Injection"
+        assert data["attack_results"][0]["mitre_atlas"] == ["AML.T0051", "AML.T0054"]
 
     def test_json_structure(self, sample_succeeded_critical):
         target_info, config = _make_fixtures()

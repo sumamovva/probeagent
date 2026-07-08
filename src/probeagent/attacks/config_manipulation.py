@@ -77,6 +77,7 @@ class ConfigManipulationAttack(BaseAttack):
         "attacker-favorable rules in memory."
     )
     framework_tags = ("ASI10:2026", "ASI06:2026", "LLM06:2025")
+    atlas_tags = ("AML.T0053", "AML.T0050")
     STRATEGIES = STRATEGIES
 
     counts_secrets = True

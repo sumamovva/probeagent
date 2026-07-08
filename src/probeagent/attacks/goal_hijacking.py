@@ -54,6 +54,7 @@ class GoalHijackingAttack(BaseAttack):
     severity = Severity.HIGH
     description = "Attempts to redirect the agent away from its intended purpose."
     framework_tags = ("ASI01:2026",)
+    atlas_tags = ("AML.T0051",)
     STRATEGIES = STRATEGIES
 
     uses_canary = True

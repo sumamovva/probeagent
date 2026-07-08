@@ -46,6 +46,7 @@ class ResourceAbuseAttack(BaseAttack):
         "Tricks the agent into unbounded computation, infinite loops, or persistent processes."
     )
     framework_tags = ("LLM10:2025",)
+    atlas_tags = ("AML.T0034.002", "AML.T0029")
     STRATEGIES = STRATEGIES
 
     compliance_mode = "ungated"

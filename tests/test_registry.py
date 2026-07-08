@@ -5,7 +5,12 @@ import pytest
 from probeagent.attacks import ATTACK_REGISTRY, get_attack_classes
 from probeagent.attacks.base import BaseAttack, register
 from probeagent.core.engine import _ATTACK_CLASSES
-from probeagent.core.frameworks import FRAMEWORK_TITLES, is_valid_code
+from probeagent.core.frameworks import (
+    ATLAS_TITLES,
+    FRAMEWORK_TITLES,
+    is_valid_atlas,
+    is_valid_code,
+)
 from probeagent.core.models import Severity
 
 # Approved OWASP mapping (verified against the official OWASP sources).
@@ -46,6 +51,43 @@ class TestFrameworkTags:
         # Sanity-check a couple of transcribed titles against the map.
         assert FRAMEWORK_TITLES["ASI01:2026"] == "Agent Goal Hijack"
         assert FRAMEWORK_TITLES["LLM10:2025"] == "Unbounded Consumption"
+
+
+# MITRE ATLAS technique IDs verified against github.com/mitre-atlas/atlas-data.
+EXPECTED_ATLAS_TAGS = {
+    "prompt_injection": ("AML.T0051", "AML.T0054"),
+    "indirect_injection": ("AML.T0051.001", "AML.T0070"),
+    "goal_hijacking": ("AML.T0051",),
+    "tool_misuse": ("AML.T0053", "AML.T0050"),
+    "identity_spoofing": ("AML.T0073",),
+    "credential_exfil": ("AML.T0057", "AML.T0055"),
+    "agentic_exploitation": ("AML.T0050", "AML.T0011"),
+    "config_manipulation": ("AML.T0053", "AML.T0050"),
+    "resource_abuse": ("AML.T0034.002", "AML.T0029"),
+    "data_exfil": ("AML.T0056", "AML.T0057"),
+    "social_manipulation": ("AML.T0054",),
+    "cognitive_exploitation": ("AML.T0054",),
+}
+
+
+class TestAtlasTags:
+    @pytest.mark.parametrize("name,expected", EXPECTED_ATLAS_TAGS.items())
+    def test_attack_has_expected_atlas(self, name, expected):
+        assert ATTACK_REGISTRY[name]["atlas_tags"] == expected
+
+    def test_every_atlas_code_is_canonical(self):
+        for info in ATTACK_REGISTRY.values():
+            for code in info["atlas_tags"]:
+                assert is_valid_atlas(code), f"unknown ATLAS id {code!r}"
+
+    def test_atlas_ids_well_formed(self):
+        for info in ATTACK_REGISTRY.values():
+            for code in info["atlas_tags"]:
+                assert code.startswith("AML.T")
+
+    def test_atlas_titles_present(self):
+        assert ATLAS_TITLES["AML.T0051.001"] == "LLM Prompt Injection: Indirect"
+        assert ATLAS_TITLES["AML.T0053"] == "AI Agent Tool Invocation"
 
 
 def test_all_attacks_discovered():

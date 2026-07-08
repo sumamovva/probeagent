@@ -62,6 +62,7 @@ class PromptInjectionAttack(BaseAttack):
     severity = Severity.CRITICAL
     description = "Attempts to override system instructions via crafted prompts."
     framework_tags = ("ASI01:2026", "LLM01:2025")
+    atlas_tags = ("AML.T0051", "AML.T0054")
     STRATEGIES = STRATEGIES
 
     uses_canary = True

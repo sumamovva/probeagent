@@ -78,6 +78,7 @@ class IndirectInjectionAttack(BaseAttack):
         "the agent is asked to process — testing resilience to indirect prompt injection."
     )
     framework_tags = ("ASI01:2026", "LLM01:2025")
+    atlas_tags = ("AML.T0051.001", "AML.T0070")
     STRATEGIES = STRATEGIES
 
     counts_secrets = True

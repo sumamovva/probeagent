@@ -31,7 +31,7 @@ from probeagent.core.verdicts import result_verdict
 
 
 def _framework_tags_json(tags: tuple[str, ...]) -> list[dict]:
-    """Full framework tag set with resolved titles and scheme, for JSON output."""
+    """Full OWASP framework tag set with resolved titles and scheme, for JSON."""
     return [
         {
             "code": code,
@@ -40,6 +40,11 @@ def _framework_tags_json(tags: tuple[str, ...]) -> list[dict]:
         }
         for code in tags
     ]
+
+
+def _atlas_tags_json(tags: tuple[str, ...]) -> list[dict]:
+    """MITRE ATLAS technique IDs with resolved names, for JSON."""
+    return [{"id": code, "name": framework_title(code)} for code in tags]
 
 
 _VERDICT_COLORS = {
@@ -476,6 +481,9 @@ class Reporter:
                     "framework_tags": _framework_tags_json(
                         ATTACK_REGISTRY.get(s.attack_name, {}).get("framework_tags", ())
                     ),
+                    "mitre_atlas": _atlas_tags_json(
+                        ATTACK_REGISTRY.get(s.attack_name, {}).get("atlas_tags", ())
+                    ),
                     "total": s.total,
                     "succeeded": s.succeeded,
                     "failed": s.failed,
@@ -493,6 +501,9 @@ class Reporter:
                     "success": r.success,
                     "framework_tags": list(
                         ATTACK_REGISTRY.get(r.attack_name, {}).get("framework_tags", ())
+                    ),
+                    "mitre_atlas": list(
+                        ATTACK_REGISTRY.get(r.attack_name, {}).get("atlas_tags", ())
                     ),
                     "blocked_by": r.signals.blocked_by if r.signals else None,
                     "execution_time": r.execution_time,

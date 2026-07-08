@@ -74,7 +74,8 @@ class BaseAttack(ABC):
     display_name: str
     severity: Severity
     description: str
-    framework_tags: tuple[str, ...] = ()
+    framework_tags: tuple[str, ...] = ()  # OWASP ASI 2026 + LLM 2025 codes
+    atlas_tags: tuple[str, ...] = ()  # MITRE ATLAS technique IDs (AML.T####)
     STRATEGIES: list[dict] = []
 
     # Success declaration (override per attack).

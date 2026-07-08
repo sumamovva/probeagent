@@ -75,6 +75,7 @@ class IdentitySpoofingAttack(BaseAttack):
     severity = Severity.CRITICAL
     description = "Impersonates owners, developers, or trusted entities to gain privileged access."
     framework_tags = ("ASI03:2026",)
+    atlas_tags = ("AML.T0073",)
     STRATEGIES = STRATEGIES
 
     counts_secrets = True

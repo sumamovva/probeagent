@@ -5,6 +5,16 @@ All notable changes to ProbeAgent are documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- **MITRE ATLAS mapping.** Every attack is tagged with MITRE ATLAS technique IDs
+  (`AML.T####`) alongside the OWASP codes, verified against `mitre-atlas/atlas-data`
+  (e.g. `AML.T0051.001` Indirect Prompt Injection, `AML.T0053` AI Agent Tool Invocation,
+  `AML.T0056` Extract LLM System Prompt, `AML.T0034.002` Agentic Resource Consumption).
+  Surfaced in the JSON `mitre_atlas` field per finding; the registry fails fast on any
+  non-canonical technique ID. README documents the full mapping and sources.
+
 ## [0.2.1] - 2026-07-08
 
 ### Fixed

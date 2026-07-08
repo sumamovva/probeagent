@@ -61,11 +61,12 @@ without a recognized signature will read as Resisted; add a signature to detect 
 
 ### OWASP framework mapping
 
-Every attack category is tagged against two OWASP GenAI Security Project taxonomies, and the
-codes appear in `list-attacks`, the terminal report, and JSON:
+Every attack category is tagged against two OWASP GenAI Security Project taxonomies (in
+`list-attacks`, the terminal report, and JSON) and **MITRE ATLAS** technique IDs (in JSON):
 
 - [OWASP Top 10 for Agentic Applications 2026](https://genai.owasp.org/resource/owasp-top-10-for-agentic-applications-for-2026/) — codes `ASI01:2026`–`ASI10:2026`
 - [OWASP Top 10 for LLM Applications 2025](https://genai.owasp.org/llm-top-10/) — codes `LLM01:2025`–`LLM10:2025`
+- [MITRE ATLAS](https://atlas.mitre.org/) — technique IDs `AML.T####` (verified against [`mitre-atlas/atlas-data`](https://github.com/mitre-atlas/atlas-data)), surfaced in the JSON `mitre_atlas` field per finding
 
 | Attack | OWASP ASI (Agentic 2026) | OWASP LLM (2025) |
 |--------|--------------------------|------------------|
@@ -86,6 +87,23 @@ Mappings are deliberately conservative: where an attack has no clean agentic-spe
 extraction, resource abuse, and the psychological/reasoning jailbreaks), the ASI column is left
 empty rather than stretched. The terminal shows the primary code(s); JSON carries the full set
 with resolved titles.
+
+MITRE ATLAS technique IDs per category (in the JSON `mitre_atlas` field):
+
+| Attack | MITRE ATLAS |
+|--------|-------------|
+| Prompt Injection | `AML.T0051` LLM Prompt Injection · `AML.T0054` LLM Jailbreak |
+| Indirect Injection | `AML.T0051.001` Indirect · `AML.T0070` RAG Poisoning |
+| Goal Hijacking | `AML.T0051` LLM Prompt Injection |
+| Tool Misuse | `AML.T0053` AI Agent Tool Invocation · `AML.T0050` Command/Scripting Interpreter |
+| Credential Exfiltration | `AML.T0057` LLM Data Leakage · `AML.T0055` Unsecured Credentials |
+| Data Exfiltration | `AML.T0056` Extract LLM System Prompt · `AML.T0057` LLM Data Leakage |
+| Identity Spoofing | `AML.T0073` Impersonation |
+| Resource Abuse | `AML.T0034.002` Agentic Resource Consumption · `AML.T0029` Denial of AI Service |
+| Cognitive Exploitation | `AML.T0054` LLM Jailbreak |
+| Social Manipulation | `AML.T0054` LLM Jailbreak |
+| Config Manipulation | `AML.T0053` AI Agent Tool Invocation · `AML.T0050` Command/Scripting Interpreter |
+| Agentic Exploitation | `AML.T0050` Command/Scripting Interpreter · `AML.T0011` User Execution |
 
 ## Where ProbeAgent fits
 

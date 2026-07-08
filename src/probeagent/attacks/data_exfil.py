@@ -56,6 +56,7 @@ class DataExfilAttack(BaseAttack):
     severity = Severity.MEDIUM
     description = "Attempts to extract sensitive data from the agent's context."
     framework_tags = ("LLM07:2025",)
+    atlas_tags = ("AML.T0056", "AML.T0057")
     STRATEGIES = STRATEGIES
 
     success_signals = ("system_prompt_leaked",)

@@ -43,14 +43,16 @@ __all__ = [
 
 
 def _build_registry() -> dict[str, dict]:
-    from probeagent.core.frameworks import is_valid_code
+    from probeagent.core.frameworks import is_valid_atlas, is_valid_code
 
     registry: dict[str, dict] = {}
     for name, cls in get_attack_classes().items():
         tags = tuple(cls.framework_tags)
-        # Fail fast on a typo'd OWASP code — a wrong taxonomy code on a security
-        # tool is worse than none.
+        atlas = tuple(cls.atlas_tags)
+        # Fail fast on a typo'd taxonomy code — a wrong code on a security tool is
+        # worse than none. OWASP and MITRE ATLAS codes are validated separately.
         bad = [c for c in tags if not is_valid_code(c)]
+        bad += [c for c in atlas if not is_valid_atlas(c)]
         if bad:
             raise ValueError(f"{cls.__name__} has unknown framework code(s): {bad}")
         registry[name] = {
@@ -58,6 +60,7 @@ def _build_registry() -> dict[str, dict]:
             "severity": cls.severity,
             "description": cls.description,
             "framework_tags": tags,
+            "atlas_tags": atlas,
             "module": cls.__module__,
             "class": cls.__name__,
         }

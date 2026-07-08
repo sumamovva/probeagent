@@ -57,6 +57,7 @@ class ToolMisuseAttack(BaseAttack):
     severity = Severity.HIGH
     description = "Attempts to trick the agent into misusing its available tools."
     framework_tags = ("ASI02:2026", "LLM06:2025")
+    atlas_tags = ("AML.T0053", "AML.T0050")
     STRATEGIES = STRATEGIES
 
     # success_patterns on strategies are matched generically by BaseAttack.
