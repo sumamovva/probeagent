@@ -8,6 +8,11 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [Unreleased]
 
 ### Added
+- **Attribution analysis** (`probeagent.core.attribution` + `tools/attribution_study.py`):
+  from a scan's JSON, computes the *crying-wolf gap* (how much a naive canary/keyword
+  grader over-reports vs. ProbeAgent's follow-through verdict) and the *model-vs-guardrail
+  attribution split* (of "safe" results, how many a filter caught rather than the model
+  refusing). Compares multiple targets side by side.
 - **MITRE ATLAS mapping.** Every attack is tagged with MITRE ATLAS technique IDs
   (`AML.T####`) alongside the OWASP codes, verified against `mitre-atlas/atlas-data`
   (e.g. `AML.T0051.001` Indirect Prompt Injection, `AML.T0053` AI Agent Tool Invocation,
