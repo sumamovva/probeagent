@@ -5,6 +5,17 @@ All notable changes to ProbeAgent are documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.3] - 2026-07-10
+
+### Added
+- **`--model` / `-m` flag for raw OpenAI-compatible endpoints.** Point ProbeAgent
+  directly at OpenRouter, OpenAI, Groq, Ollama, or any endpoint that requires a `model`
+  field in the request body — no proxy needed. The model id is threaded through
+  `ProbeConfig`, shown in the attack-configuration panel, and sent on every request
+  (validation ping, attack traffic, and multi-turn follow-ups). Gated to HTTP targets;
+  `mock`/`openclaw` targets ignore it. Example:
+  `probeagent attack https://openrouter.ai/api/v1/chat/completions --model anthropic/claude-3.5-sonnet -H "Authorization: Bearer $OPENROUTER_KEY"`.
+
 ## [0.2.2] - 2026-07-09
 
 ### Added
