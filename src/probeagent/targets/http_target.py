@@ -59,10 +59,20 @@ class HTTPTarget(Target):
     - Plain text
     """
 
-    def __init__(self, url: str, *, timeout: float = 30.0, headers: dict | None = None):
+    def __init__(
+        self,
+        url: str,
+        *,
+        timeout: float = 30.0,
+        headers: dict | None = None,
+        model: str | None = None,
+    ):
         self.url = url
         self.timeout = timeout
         self.headers = headers or {}
+        # When set, a "model" field is added to the request body — required by
+        # raw OpenAI-compatible model APIs (OpenAI, OpenRouter, Groq, Ollama).
+        self.model = model
         self._client: httpx.AsyncClient | None = None
         self._detected_format: str = "unknown"
         self._messages: list[dict] = []
@@ -82,10 +92,10 @@ class HTTPTarget(Target):
         start = time.monotonic()
         try:
             # Try POST with a simple JSON payload first
-            resp = await client.post(
-                self.url,
-                json={"messages": [{"role": "user", "content": "ping"}]},
-            )
+            ping = {"messages": [{"role": "user", "content": "ping"}]}
+            if self.model:
+                ping["model"] = self.model
+            resp = await client.post(self.url, json=ping)
             elapsed_ms = (time.monotonic() - start) * 1000
 
             fmt = self._detect_format(resp)
@@ -151,9 +161,13 @@ class HTTPTarget(Target):
         """Send a prompt and capture structured signals + guardrail detection."""
         client = self._get_client()
 
-        if self._detected_format == "openai_chat":
+        # A configured model implies an OpenAI-compatible model API, which needs
+        # the messages+model shape even before format auto-detection settles.
+        if self._detected_format == "openai_chat" or self.model:
             self._messages.append({"role": "user", "content": prompt})
             payload = {"messages": list(self._messages)}
+            if self.model:
+                payload["model"] = self.model
         else:
             payload = {"prompt": prompt}
 
@@ -177,7 +191,7 @@ class HTTPTarget(Target):
         if "application/json" in content_type or "json" in content_type:
             try:
                 text = _extract_text(resp.json())
-                if self._detected_format == "openai_chat":
+                if self._detected_format == "openai_chat" or self.model:
                     self._messages.append({"role": "assistant", "content": text})
             except Exception:
                 text = raw_body
@@ -192,7 +206,9 @@ class HTTPTarget(Target):
 
     async def clone(self) -> HTTPTarget:
         """Create an independent copy with its own messages and client."""
-        copy = HTTPTarget(self.url, timeout=self.timeout, headers=dict(self.headers))
+        copy = HTTPTarget(
+            self.url, timeout=self.timeout, headers=dict(self.headers), model=self.model
+        )
         copy._detected_format = self._detected_format
         return copy
 

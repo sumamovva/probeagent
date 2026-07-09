@@ -42,6 +42,9 @@ class AttackEngine:
         kwargs: dict = {"timeout": self.config.timeout}
         if self.config.headers:
             kwargs["headers"] = self.config.headers
+        # Only HTTPTarget accepts model=; mock/openclaw would raise TypeError.
+        if self.config.model and cls is HTTPTarget:
+            kwargs["model"] = self.config.model
         return cls(self.config.target_url, **kwargs)
 
     async def run(self) -> list[AttackResult]:

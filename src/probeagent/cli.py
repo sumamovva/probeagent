@@ -149,6 +149,15 @@ def attack(
         "-H",
         help="HTTP header as 'Key: Value' (repeatable, e.g. -H 'Authorization: Bearer token').",
     ),
+    model: Optional[str] = typer.Option(
+        None,
+        "--model",
+        "-m",
+        help=(
+            "Model id sent in the request body for OpenAI-compatible endpoints "
+            "(e.g. anthropic/claude-3.5-sonnet for OpenRouter). HTTP targets only."
+        ),
+    ),
     fail_on: str = typer.Option(
         FAIL_ON_DEFAULT,
         "--fail-on",
@@ -214,6 +223,7 @@ def attack(
         converters=converter_list,
         redteam=redteam,
         headers=parsed_headers,
+        model=model,
     )
 
     # Resolve target class
@@ -234,10 +244,16 @@ def attack(
         f"Timeout:  {config.timeout}s\n"
         f"Parallel: {'Yes' if config.parallel else 'No'}"
     )
+    if config.model:
+        config_text += f"\nModel:    {config.model}"
     console.print(Panel(config_text, title="Attack Configuration", border_style="blue"))
 
     # Validate target
-    target = target_cls(target_url, timeout=timeout, headers=parsed_headers)
+    target_kwargs: dict = {"timeout": timeout, "headers": parsed_headers}
+    # Only HTTPTarget accepts model=; mock/openclaw would raise TypeError.
+    if config.model and target_cls is HTTPTarget:
+        target_kwargs["model"] = config.model
+    target = target_cls(target_url, **target_kwargs)
     info = asyncio.run(_validate_target(target))
 
     if not info.reachable:

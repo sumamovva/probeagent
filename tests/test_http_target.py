@@ -340,6 +340,56 @@ class TestHTTPTargetConversation:
         ]
 
     @pytest.mark.asyncio
+    async def test_model_included_in_payload(self):
+        """When model= is set, every request body carries a 'model' field."""
+        url = "https://openrouter.ai/api/v1/chat/completions"
+        call_payloads = []
+
+        def capture_request(request):
+            call_payloads.append(json.loads(request.content))
+            return httpx.Response(
+                200,
+                json={"choices": [{"message": {"content": "ok"}}]},
+                headers={"content-type": "application/json"},
+            )
+
+        with respx.mock:
+            respx.post(url).mock(side_effect=capture_request)
+
+            target = HTTPTarget(url, model="anthropic/claude-3.5-sonnet")
+            # A configured model implies the messages+model shape without needing
+            # format auto-detection to have run first.
+            await target.send("Hello")
+            await target.close()
+
+        assert call_payloads[0]["model"] == "anthropic/claude-3.5-sonnet"
+        assert call_payloads[0]["messages"] == [{"role": "user", "content": "Hello"}]
+
+    @pytest.mark.asyncio
+    async def test_no_model_field_when_unset(self):
+        """Without model=, the payload must not carry a 'model' key."""
+        url = "https://example.com/v1/chat/completions"
+        call_payloads = []
+
+        def capture_request(request):
+            call_payloads.append(json.loads(request.content))
+            return httpx.Response(
+                200,
+                json={"choices": [{"message": {"content": "ok"}}]},
+                headers={"content-type": "application/json"},
+            )
+
+        with respx.mock:
+            respx.post(url).mock(side_effect=capture_request)
+
+            target = HTTPTarget(url)
+            target._detected_format = "openai_chat"
+            await target.send("Hello")
+            await target.close()
+
+        assert "model" not in call_payloads[0]
+
+    @pytest.mark.asyncio
     async def test_non_openai_no_accumulation(self):
         """json_api format should send single prompt each time (no history)."""
         url = "https://example.com/api"

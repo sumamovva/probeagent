@@ -195,6 +195,17 @@ probeagent attack https://your-agent.example.com/api --profile quick
 probeagent attack https://your-agent.example.com/api --profile standard --parallel
 ```
 
+### Scan a raw OpenAI-compatible endpoint (OpenRouter, OpenAI, Groq, Ollama)
+
+Raw model APIs require a `model` field in the request body. Pass it with `--model` / `-m`
+and supply your key via a header:
+
+```bash
+probeagent attack https://openrouter.ai/api/v1/chat/completions \
+  --model anthropic/claude-3.5-sonnet \
+  -H "Authorization: Bearer $OPENROUTER_KEY"
+```
+
 ### Scan an OpenClaw agent
 
 OpenClaw exposes an OpenAI-compatible gateway at `/v1/chat/completions`. Use `--target-type http` (the default) — **not** `--target-type openclaw`, which targets the n8n webhook format and is not compatible with the gateway.

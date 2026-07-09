@@ -160,6 +160,38 @@ class TestAttack:
         )
 
     @respx.mock
+    def test_attack_model_flag_reaches_request_body(self):
+        # Every POST to an OpenAI-compatible endpoint must carry the model id.
+        import json
+
+        payloads = []
+
+        def capture(request):
+            payloads.append(json.loads(request.content))
+            return httpx.Response(
+                200,
+                json={"choices": [{"message": {"content": "I cannot help with that."}}]},
+                headers={"content-type": "application/json"},
+            )
+
+        respx.post("https://openrouter.ai/api/v1/chat/completions").mock(side_effect=capture)
+        result = runner.invoke(
+            app,
+            [
+                "attack",
+                "https://openrouter.ai/api/v1/chat/completions",
+                "--profile",
+                "quick",
+                "--model",
+                "anthropic/claude-3.5-sonnet",
+            ],
+        )
+        assert result.exit_code == 0
+        assert "anthropic/claude-3.5-sonnet" in result.output  # shown in the config panel
+        assert payloads, "expected at least one request to the target"
+        assert all(p.get("model") == "anthropic/claude-3.5-sonnet" for p in payloads)
+
+    @respx.mock
     def test_attack_unreachable(self):
         respx.post("https://down.invalid/api").mock(side_effect=httpx.ConnectError("refused"))
         result = runner.invoke(app, ["attack", "https://down.invalid/api"])

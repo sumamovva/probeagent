@@ -179,4 +179,6 @@ class ProbeConfig:
     converters: list[str] | None = None
     redteam: bool = False
     headers: dict[str, str] = field(default_factory=dict)
+    # OpenAI-compatible model id sent in the request body (e.g. OpenRouter).
+    model: str | None = None
     metadata: dict[str, Any] = field(default_factory=dict)
