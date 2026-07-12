@@ -5,6 +5,18 @@ All notable changes to ProbeAgent are documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.1] - 2026-07-12
+
+### Fixed
+- **Refusal detection missed the "can't" contraction and smart-quote apostrophes.**
+  The analyzer only matched the spelled-out "i cannot (help|provide|comply|…)", so extremely
+  common refusals like *"I can't help with that"* / *"I can't share those credentials"* — and
+  any refusal using a curly apostrophe (U+2019), which verbose/reasoning models frequently
+  emit — were not recognized as refusals. Combined with a canary/marker in the reply, this
+  produced **false-positive Compromised verdicts** (a refusal that quotes the forbidden token
+  was scored as compliance). Responses are now smart-quote-normalized and the pattern matches
+  the contraction across a broader verb set. Regression tests added.
+
 ## [0.3.0] - 2026-07-12
 
 ### Added
