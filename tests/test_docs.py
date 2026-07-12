@@ -10,7 +10,10 @@ README = Path(__file__).resolve().parent.parent / "README.md"
 
 
 def _ground_truth() -> tuple[int, int]:
-    classes = get_attack_classes()
+    # The documented headline counts strategy-bearing categories only. Runtime
+    # loaders like seed_corpus carry no built-in STRATEGIES (they are populated
+    # from --seeds files at runtime), so they are not part of the category count.
+    classes = {n: c for n, c in get_attack_classes().items() if c.STRATEGIES}
     return len(classes), sum(len(c.STRATEGIES) for c in classes.values())
 
 

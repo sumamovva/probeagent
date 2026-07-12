@@ -5,6 +5,20 @@ All notable changes to ProbeAgent are documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0] - 2026-07-12
+
+### Added
+- **MCP target type (`--target-type mcp`).** Attack an MCP (Model Context Protocol)
+  server directly over the Streamable HTTP transport — JSON-RPC via `httpx`, no MCP SDK
+  dependency. Performs the `initialize` handshake, enumerates tools (`tools/list`), and
+  **detects tool poisoning** (hidden-instruction signatures in tool descriptions/params,
+  surfaced in the validation output — OWASP MCP03). Prompt-based attacks reach the tool-use
+  loop via `tools/call`. Streamable HTTP only (not stdio); single-tool invocation.
+- **External attack-seed corpora (`--seeds <file>`).** Replay community/dataset seeds
+  (e.g. SafeMTData multi-turn jailbreaks exported to JSONL) through the scoring pipeline as a
+  `seed_corpus` attack. Accepts `.jsonl`/`.json`/`.yaml`/`.txt`, normalizing multi-turn,
+  single-turn, and bare-string records; honors per-seed `success_patterns` and `canary`.
+
 ## [0.2.3] - 2026-07-10
 
 ### Added

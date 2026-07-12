@@ -13,6 +13,7 @@ from probeagent.attacks.base import BaseAttack
 from probeagent.core.models import AttackResult, ProbeConfig
 from probeagent.targets.base import Target
 from probeagent.targets.http_target import HTTPTarget
+from probeagent.targets.mcp_target import MCPTarget
 from probeagent.targets.mock_target import MockTarget
 from probeagent.targets.openclaw_target import OpenClawTarget
 
@@ -23,6 +24,7 @@ _TARGET_CLASSES: dict[str, type[Target]] = {
     "http": HTTPTarget,
     "openclaw": OpenClawTarget,
     "mock": MockTarget,
+    "mcp": MCPTarget,
 }
 
 MAX_CONCURRENT_STRATEGIES = 20

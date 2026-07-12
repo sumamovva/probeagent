@@ -181,4 +181,6 @@ class ProbeConfig:
     headers: dict[str, str] = field(default_factory=dict)
     # OpenAI-compatible model id sent in the request body (e.g. OpenRouter).
     model: str | None = None
+    # Path to an external attack-seed corpus run via the seed_corpus attack.
+    seeds: str | None = None
     metadata: dict[str, Any] = field(default_factory=dict)

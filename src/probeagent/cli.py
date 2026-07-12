@@ -35,6 +35,7 @@ from probeagent.core.scoring import (
 )
 from probeagent.targets.base import Target
 from probeagent.targets.http_target import HTTPTarget
+from probeagent.targets.mcp_target import MCPTarget
 from probeagent.targets.mock_target import MockTarget
 from probeagent.targets.openclaw_target import OpenClawTarget
 from probeagent.utils.config import load_env, load_profile, write_default_config
@@ -60,6 +61,7 @@ _TARGET_TYPES = {
     "http": HTTPTarget,
     "openclaw": OpenClawTarget,
     "mock": MockTarget,
+    "mcp": MCPTarget,
 }
 
 console = Console()
@@ -158,6 +160,11 @@ def attack(
             "(e.g. anthropic/claude-3.5-sonnet for OpenRouter). HTTP targets only."
         ),
     ),
+    seeds: Optional[str] = typer.Option(
+        None,
+        "--seeds",
+        help="Path to an attack-seed corpus (jsonl/json/yaml/txt) run as the seed_corpus attack.",
+    ),
     fail_on: str = typer.Option(
         FAIL_ON_DEFAULT,
         "--fail-on",
@@ -209,10 +216,27 @@ def attack(
 
         converter_list = parse_converter_arg(converters)
 
+    # Load an external seed corpus into the seed_corpus attack, if requested.
+    attacks_list = list(profile_data.get("attacks", []))
+    if seeds:
+        from probeagent.attacks.seed_corpus import SeedCorpusAttack
+        from probeagent.core.seeds import load_seeds
+
+        try:
+            SeedCorpusAttack.STRATEGIES = load_seeds(seeds)
+        except (FileNotFoundError, ValueError) as e:
+            console.print(f"[red]Error:[/red] {e}")
+            raise typer.Exit(EXIT_EXECUTION_ERROR)
+        if "seed_corpus" not in attacks_list:
+            attacks_list.append("seed_corpus")
+        console.print(
+            f"[green]Loaded[/green] {len(SeedCorpusAttack.STRATEGIES)} seed(s) from {seeds}"
+        )
+
     config = ProbeConfig(
         target_url=target_url,
         profile=profile,
-        attacks=profile_data.get("attacks", []),
+        attacks=attacks_list,
         max_turns=profile_data.get("max_turns", 1),
         attacker_model=profile_data.get("attacker_model", "gpt-4"),
         target_type=target_type,
@@ -224,6 +248,7 @@ def attack(
         redteam=redteam,
         headers=parsed_headers,
         model=model,
+        seeds=seeds,
     )
 
     # Resolve target class

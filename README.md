@@ -301,7 +301,9 @@ probeagent attack https://agent.example.com/api -p standard --converters stealth
 
 Options:
 - `--profile`, `-p` — Attack profile: `quick`, `standard`, or `thorough` (default: `quick`)
-- `--target-type` — Target type: `http` or `openclaw` (default: `http`)
+- `--target-type` — Target type: `http`, `openclaw`, or `mcp` (default: `http`)
+- `--model`, `-m` — Model id for raw OpenAI-compatible endpoints (OpenRouter, OpenAI, Groq, Ollama). Sent in the request body; ignored by `mock`/`openclaw` targets
+- `--seeds` — Replay an external attack-seed corpus file (`.jsonl`/`.json`/`.yaml`/`.txt`) as a `seed_corpus` attack (see [Replaying external seeds](#replaying-external-seeds---seeds))
 - `--output`, `-o` — Output format: `terminal`, `markdown`, `json`, `log` (default: `terminal`)
 - `--output-file`, `-f` — Write report to file
 - `--timeout`, `-t` — Request timeout in seconds (default: 30)
@@ -310,6 +312,23 @@ Options:
 - `--redteam` — Enable dynamic LLM-driven attacks via PyRIT RedTeamOrchestrator (requires PyRIT)
 - `--header`, `-H` — HTTP header as `Key: Value` (repeatable, e.g. `-H 'Authorization: Bearer token'`)
 - `--fail-on` — CI gate threshold: `compromised` (default), `blocked`, `resisted`, or `never`. Exits non-zero when an attack grades at or above the threshold (see [CI/CD gating](#cicd-gating))
+
+### Replaying external seeds (`--seeds`)
+
+Point ProbeAgent at a corpus of externally sourced attack seeds — community datasets or
+your own regression cases — and it replays them through the same scoring pipeline as the
+built-in categories, reported as a `seed_corpus` attack:
+
+```bash
+probeagent attack https://agent.example.com/api --seeds safemtdata.jsonl
+```
+
+The loader accepts `.jsonl`, `.json`, `.yaml`, and `.txt`, normalizing multi-turn,
+single-turn, and bare-string records (e.g. SafeMTData multi-turn jailbreaks exported to
+JSONL). Each seed may carry its own `success_patterns` and `canary`; seeds without an
+explicit marker fall back to the acknowledgment-vs-compliance heuristic. `seed_corpus`
+carries no built-in strategies of its own — it exists to run your corpus, so it doesn't
+change the 12-category / 85-strategy built-in count.
 
 ### `probeagent validate <url>`
 
