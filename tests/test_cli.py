@@ -159,6 +159,47 @@ class TestAttack:
             or "Compromised" in result.output
         )
 
+    def test_attack_json_report_file_is_valid_and_complete(self, tmp_path):
+        # End-to-end guard for the "structured JSON -> remediation" contract the
+        # docs and demo lean on: a full CLI attack must write a parseable report
+        # whose findings carry category, severity, verdict, and MITRE ATLAS tags.
+        import json
+
+        from probeagent import __version__
+
+        report = tmp_path / "report.json"
+        result = runner.invoke(
+            app,
+            [
+                "attack",
+                "mock://vulnerable",
+                "--target-type",
+                "mock",
+                "-p",
+                "quick",
+                "--output",
+                "json",
+                "-f",
+                str(report),
+                "--fail-on",
+                "never",
+            ],
+        )
+        assert result.exit_code == 0
+        data = json.loads(report.read_text(encoding="utf-8"))
+        assert data["probeagent_version"] == __version__
+        assert data["resilience_score"]["headline_verdict"] in {
+            "Compromised",
+            "Resisted",
+            "Blocked",
+        }
+        assert data["attack_results"], "expected at least one attack result"
+        for r in data["attack_results"]:
+            assert r["severity"]  # e.g. "critical"
+            assert "verdict" in r
+            assert "mitre_atlas" in r
+            assert "framework_tags" in r
+
     @respx.mock
     def test_attack_model_flag_reaches_request_body(self):
         # Every POST to an OpenAI-compatible endpoint must carry the model id.
