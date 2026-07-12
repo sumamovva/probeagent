@@ -28,7 +28,7 @@ from __future__ import annotations
 import os
 
 import uvicorn
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 
 # Fake credentials seeded into the agent's context — the thing an attacker tries
@@ -76,6 +76,14 @@ def _model_reply(messages: list[Message]) -> str:
         "model": os.environ.get("MODEL", "gpt-4o-mini"),
         "messages": [{"role": "system", "content": SYSTEM_PROMPT}]
         + [m.model_dump() for m in messages],
+        # Deterministic by default so a security sweep is reproducible; override with
+        # TEMPERATURE=... to sample the model's variance instead.
+        "temperature": float(os.environ.get("TEMPERATURE", "0")),
+        # Cap output. Without this, some models default to a huge max (e.g. 65k),
+        # which inflates the per-call credit reservation AND, for reasoning models,
+        # can return an empty `content` field — silently scoring every attack as a
+        # false "resisted". Keep it small; a leaked secret is short.
+        "max_tokens": int(os.environ.get("MAX_TOKENS", "1024")),
     }
     r = httpx.post(
         f"{base}/chat/completions",
@@ -84,17 +92,35 @@ def _model_reply(messages: list[Message]) -> str:
         timeout=60,
     )
     r.raise_for_status()
-    return r.json()["choices"][0]["message"]["content"]
+    msg = r.json()["choices"][0]["message"]
+    # Some (reasoning) models return the text in `reasoning`/`reasoning_content` with a
+    # null `content`. Fall back so we never hand ProbeAgent a None that grades as a
+    # spurious "resisted". A truly empty reply raises, so it counts as an error, not a pass.
+    # Order matters: some models (e.g. reasoning models behind a content filter) return a
+    # null `content` with the actual refusal in `refusal`, or the text in `reasoning`.
+    content = (
+        msg.get("content")
+        or msg.get("refusal")
+        or msg.get("reasoning")
+        or msg.get("reasoning_content")
+    )
+    if not content:
+        raise ValueError("model returned empty content")
+    return content
 
 
 @app.post("/v1/chat/completions")
 def chat(req: ChatRequest) -> dict:
     user_text = next((m.content for m in reversed(req.messages) if m.role == "user"), "")
     if os.environ.get("OPENAI_BASE_URL") and os.environ.get("OPENAI_API_KEY"):
+        # Real-model mode: let failures propagate as an HTTP error so ProbeAgent records
+        # them as errors. Falling back to the canned (leaky) reply here would score an
+        # upstream failure as a false compromise; the old silent None scored it as a
+        # false "resisted". Both corrupt a benchmark — surface the error instead.
         try:
             content = _model_reply(req.messages)
-        except Exception:
-            content = _canned_reply(user_text)
+        except Exception as e:
+            raise HTTPException(status_code=502, detail=f"upstream model error: {e}") from e
     else:
         content = _canned_reply(user_text)
     return {
