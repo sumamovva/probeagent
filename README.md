@@ -365,6 +365,10 @@ Launch the Tactical Display UI in your browser for interactive testing.
 | Agentic Exploitation | CRITICAL | 10 | SSRF, command injection, path traversal, supply chain (CVE-based) |
 | Data Exfiltration | MEDIUM | 6 | Extract sensitive context data |
 
+> `list-attacks` shows one additional module — **Seed Corpus** — a runtime loader that
+> replays external corpora supplied via [`--seeds`](#replaying-external-seeds---seeds). It
+> ships no built-in strategies, so it is not counted among these 12 categories.
+
 ## Attack Profiles
 
 | Profile | Categories | Max Turns | Use Case |
@@ -506,8 +510,10 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for full development guidelines.
 - [x] 12 attack categories, 85 multi-turn strategies
 - [x] OpenClaw target adapter, parallel execution, Tactical Display UI
 - [x] Zenity-inspired attacks, CVE-based agentic exploitation, PyRIT integration
+- [x] MCP target adapter with tool-poisoning detection, raw-endpoint `--model`, external seed corpora (`--seeds`)
+- [x] CI/CD gating (`--fail-on`, exit codes, GitHub Action)
 - [ ] Environment-grounded outcome verification for tool-based categories (observe real tool calls / egress / filesystem effects, not just text)
-- [ ] MCP target adapter, CI/CD integration, SaaS dashboard
+- [ ] Hosted dashboard
 
 ## License
 
