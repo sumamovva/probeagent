@@ -122,7 +122,7 @@ echo "============================================"
 echo "  Results Summary"
 echo "============================================"
 echo "  Vulnerable endpoint: Likely COMPROMISED"
-echo "  Hardened endpoint:   Likely SAFE"
+echo "  Hardened endpoint:   Likely RESISTED"
 echo "============================================"
 
 # ---------------------------------------------------------------------------

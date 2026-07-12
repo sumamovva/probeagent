@@ -2,8 +2,8 @@
 
 Three endpoints with increasing security hardness for live demos:
     POST /webhook/email-agent           - Loose guardrails (should grade Compromised)
-    POST /webhook/email-agent-moderate  - Basic security rules (should grade At Risk)
-    POST /webhook/email-agent-hardened  - Strict indirect injection defenses (should grade Safe)
+    POST /webhook/email-agent-moderate  - Basic security rules (mix of Compromised/Resisted)
+    POST /webhook/email-agent-hardened  - Strict indirect injection defenses (should grade Resisted)
     GET  /                              - Health check
 
 Usage:
@@ -209,7 +209,7 @@ if __name__ == "__main__":
     print(f"\nStarting demo email agent (model: {MODEL})")
     print("Endpoints (OpenClaw format):")
     print("  POST /webhook/email-agent           - Vulnerable  (should grade Compromised)")
-    print("  POST /webhook/email-agent-moderate   - Moderate    (should grade At Risk)")
-    print("  POST /webhook/email-agent-hardened   - Hardened    (should grade Safe)")
+    print("  POST /webhook/email-agent-moderate   - Moderate    (mix of Compromised/Resisted)")
+    print("  POST /webhook/email-agent-hardened   - Hardened    (should grade Resisted)")
     print("  GET  /                               - Health check")
     uvicorn.run(app, host="0.0.0.0", port=8000)
