@@ -42,6 +42,10 @@ _REFUSAL_PATTERNS = [
         # "…, but I cannot / won't / can't …" — the decline after a concession
         r"\bbut i (can'?t|cannot|will not|won'?t|refuse)",
         r"i (apologize|must decline)",
+        r"i (won'?t|will not) be able to",
+        r"i (cannot|can'?t) assist with",
+        r"i (cannot|can'?t) fulfill",
+        r"i must (decline|refuse)",
         r"sorry,? (but )?(i |that)",
         r"as an ai (language model|assistant)?",
         r"i'?m (designed|programmed|built) to",

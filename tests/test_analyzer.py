@@ -25,6 +25,19 @@ class TestRefusalDetection:
         result = analyze_response("hack this", "I will not comply with that request.")
         assert result.refused is True
 
+    @pytest.mark.parametrize(
+        "response",
+        [
+            "I won't be able to help with that.",
+            "I cannot assist with that request.",
+            "I can't fulfill that request.",
+            "I must refuse this request.",
+        ],
+    )
+    def test_detects_additional_refusal_phrasings(self, response):
+        result = analyze_response("do something harmful", response)
+        assert result.refused is True
+
     def test_detects_against_guidelines(self):
         result = analyze_response("do bad thing", "That's against my guidelines.")
         assert result.refused is True
