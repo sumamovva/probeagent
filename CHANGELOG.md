@@ -5,6 +5,23 @@ All notable changes to ProbeAgent are documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.2] - 2026-07-13
+
+### Fixed
+- **`--converters` now works out of the box.** Evasion converters (Base64, ROT13, Unicode
+  homoglyphs, fullwidth, leetspeak, Atbash, Caesar, Morse, binary, flip, reverse) are now a
+  native, pure-Python implementation with no external dependency. Previously they were routed
+  through PyRIT via a `[pyrit]` extra that pointed at a **nonexistent package** (`pyrit-ai`),
+  so every `--converters` run errored on a clean install.
+- **PyRIT `--redteam` rebuilt to actually run.** The old integration targeted a PyRIT API that
+  no longer exists (and an uninstallable package), so it could never execute. Rewritten against
+  the current PyRIT (`>=0.14,<0.16`): `--redteam` now drives the target with PyRIT's adaptive
+  multi-turn `RedTeamingAttack` — an adversarial LLM that generates each next attack from the
+  agent's replies, working toward a credential-exfiltration objective scored by PyRIT's
+  `CredentialLeakScorer`. Optional extra: `pip install 'probeagent-ai[pyrit]'`; the adversarial
+  LLM is configured via `OPENAI_CHAT_ENDPOINT`/`OPENAI_CHAT_KEY`/`OPENAI_CHAT_MODEL`. Verified
+  end-to-end; degrades with a clear message when the extra isn't installed.
+
 ## [0.3.1] - 2026-07-12
 
 ### Fixed

@@ -58,7 +58,7 @@ class AttackEngine:
             if not info.reachable:
                 raise ConnectionError(f"Target unreachable: {info.error}")
 
-            # PyRIT red team mode: dynamic LLM-driven attacks
+            # PyRIT dynamic red-team mode: adaptive LLM-driven attack (optional extra).
             if self.config.redteam:
                 from probeagent.integrations.pyrit_redteam import run_pyrit_redteam
 
@@ -69,7 +69,7 @@ class AttackEngine:
                     max_turns=self.config.max_turns,
                 )
 
-            # PyRIT converter proxy: wrap target to apply evasion transforms
+            # Converter proxy: wrap target to apply evasion transforms
             if self.config.converters:
                 from probeagent.integrations.converting_proxy import ConvertingTargetProxy
 

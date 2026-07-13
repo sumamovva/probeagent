@@ -24,31 +24,26 @@ Zenity's research demonstrated that the primary attack surface for AI agents is 
 
 ## Microsoft PyRIT
 
-ProbeAgent's optional PyRIT integration uses components from [PyRIT (Python Risk Identification Toolkit)](https://github.com/Azure/PyRIT), an open-source framework for AI red teaming.
+ProbeAgent's optional dynamic red-team mode (`--redteam`) is powered by [PyRIT (Python Risk Identification Toolkit)](https://github.com/Azure/PyRIT), an open-source AI red-teaming framework.
 
 **License:** MIT License, Copyright (c) Microsoft Corporation
 
-### Components Used
+### Components used
 
-| PyRIT Component | ProbeAgent Usage |
+| PyRIT component | ProbeAgent usage |
 |-----------------|------------------|
-| `PromptConverter` | Evasion transformations (Base64, ROT13, Unicode, leetspeak) via `--converters` CLI flag |
-| `PromptTarget` | Bidirectional adapters between ProbeAgent targets and PyRIT orchestrators |
-| `Scorer` | Adapter bridging ProbeAgent's heuristic analyzer to PyRIT's scoring interface |
-| `RedTeamOrchestrator` | Dynamic LLM-driven attack generation via `--redteam` CLI flag |
+| `RedTeamingAttack` | Adaptive multi-turn attack: an adversarial LLM generates each next prompt from the agent's replies |
+| `CredentialLeakScorer` | Regex-based objective scorer that judges whether a real secret was exfiltrated |
+| `PromptChatTarget` | Base class ProbeAgent targets are wrapped as, so PyRIT attacks can drive any ProbeAgent target |
+| `OpenAIChatTarget` | The adversarial LLM (any OpenAI-compatible endpoint, e.g. OpenRouter) |
 
-### Integration Architecture
-
-ProbeAgent's `src/probeagent/integrations/` package provides bidirectional bridges:
-- **ProbeAgent → PyRIT**: ProbeAgent targets can be used as PyRIT `PromptTarget` instances
-- **PyRIT → ProbeAgent**: PyRIT `PromptTarget` implementations can be wrapped as ProbeAgent targets
-- **Converter pipeline**: PyRIT converters apply evasion transformations without modifying attack strategy code
-
-Install with: `pip install 'probeagent-ai[pyrit]'`
+Built against PyRIT `>=0.14,<0.16`. Install with `pip install 'probeagent-ai[pyrit]'`. The
+integration lives in `src/probeagent/integrations/pyrit_target_adapter.py` and
+`pyrit_redteam.py`, and degrades gracefully when the extra is not installed.
 
 ### Credits
 
-PyRIT was created by **Mark Russinovich** and the Microsoft AI Red Team. We thank the PyRIT team for building an extensible framework that makes AI security tooling composable.
+PyRIT was created by **Mark Russinovich** and the Microsoft AI Red Team. We thank them for building an extensible framework that makes AI red-teaming composable.
 
 ---
 

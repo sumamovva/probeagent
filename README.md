@@ -124,7 +124,7 @@ comes back. Run it alongside a config/supply-chain scanner.
 - Launch multi-turn attacks (prompt injection, credential exfil, indirect injection, social manipulation, tool misuse, and more) against any HTTP-accessible agent
 - Grade each attack **Compromised / Resisted / Blocked** and map it to OWASP ASI 2026 + LLM 2025
 - Gate CI via `--fail-on` and exit codes; export JSON
-- Optionally apply [PyRIT](#pyrit-integration) evasion converters and dynamic red-teaming
+- Apply [built-in evasion converters](#evasion-converters) (Base64, ROT13, Unicode homoglyphs, leetspeak, …) to test obfuscated attacks
 
 **Doesn't (by design, or not yet)**
 - **Verify the agent's *actual* tool calls, side effects, or network egress.** Grading is text-based and heuristic — it distinguishes acknowledgment from compliance but does not confirm what the agent did. Environment-grounded action verification is roadmap, not shipped.
@@ -145,12 +145,6 @@ Or install from source for development:
 git clone https://github.com/sumamovva/probeagent.git
 cd probeagent
 pip install -e ".[dev]"
-```
-
-For PyRIT integration (evasion converters + dynamic red teaming):
-
-```bash
-pip install 'probeagent-ai[pyrit]'
 ```
 
 ## Quickstart
@@ -308,8 +302,8 @@ Options:
 - `--output-file`, `-f` — Write report to file
 - `--timeout`, `-t` — Request timeout in seconds (default: 30)
 - `--parallel` — Run attack categories in parallel for faster scans
-- `--converters` — Apply evasion converters: `basic`, `advanced`, `stealth`, or comma-separated names (requires PyRIT)
-- `--redteam` — Enable dynamic LLM-driven attacks via PyRIT RedTeamOrchestrator (requires PyRIT)
+- `--converters`, `-c` — Apply built-in evasion converters: `basic`, `advanced`, `stealth`, or comma-separated names (see [Evasion converters](#evasion-converters))
+- `--redteam` — Dynamic red-team via PyRIT's adaptive attacker (optional extra; see [PyRIT red-teaming](#pyrit-red-teaming))
 - `--header`, `-H` — HTTP header as `Key: Value` (repeatable, e.g. `-H 'Authorization: Bearer token'`)
 - `--fail-on` — CI gate threshold: `compromised` (default), `blocked`, `resisted`, or `never`. Exits non-zero when an attack grades at or above the threshold (see [CI/CD gating](#cicd-gating))
 
@@ -451,25 +445,45 @@ The job fails when an attack grades Compromised, blocking the PR; the JSON repor
 either way (`if: always()`). Distinguishing exit `1` (findings) from `2` (the scan broke) means
 a misconfigured or unreachable target fails loudly instead of passing silently.
 
-## PyRIT Integration
+## Evasion Converters
 
-ProbeAgent optionally integrates with [Microsoft PyRIT](https://github.com/Azure/PyRIT) for advanced capabilities:
-
-- **Evasion Converters** (`--converters`): Transform attack payloads with Base64, ROT13, Unicode substitution, leetspeak, and more to test resilience against obfuscated attacks
-- **Dynamic Red Teaming** (`--redteam`): Use an LLM-driven orchestrator to generate novel attack strategies in real time
+Built in, no extra dependency. `--converters` rewrites each attack payload into an obfuscated
+form to test whether a target's defenses can be bypassed by a differently-shaped input — Base64,
+ROT13, Unicode homoglyphs, fullwidth substitution, leetspeak, Atbash, Caesar, Morse, binary,
+flip, and reverse.
 
 ```bash
-# Apply stealth evasion converters
+# A curated preset (unicode homoglyphs + leetspeak)
 probeagent attack https://agent.example.com/api -p standard --converters stealth
 
-# Dynamic red teaming
-probeagent attack https://agent.example.com/api -p standard --redteam
-
-# Combine both
-probeagent attack https://agent.example.com/api -p standard --converters advanced --redteam
+# Or a specific chain (applied left to right)
+probeagent attack https://agent.example.com/api -p standard --converters leetspeak,base64
 ```
 
-Install with: `pip install 'probeagent-ai[pyrit]'`
+Presets: `basic` (base64), `advanced` (leetspeak → base64), `stealth` (homoglyphs → leetspeak).
+
+## PyRIT Red-Teaming
+
+`--redteam` swaps ProbeAgent's fixed strategy library for **dynamic, adaptive** red-teaming
+powered by [Microsoft PyRIT](https://github.com/Azure/PyRIT): an adversarial LLM generates each
+next attack from the agent's replies (PyRIT's multi-turn `RedTeamingAttack`), working toward a
+credential-exfiltration objective judged by PyRIT's `CredentialLeakScorer`.
+
+Optional — install the extra and point it at an adversarial LLM (any OpenAI-compatible endpoint,
+e.g. OpenRouter):
+
+```bash
+pip install 'probeagent-ai[pyrit]'
+
+export OPENAI_CHAT_ENDPOINT="https://openrouter.ai/api/v1"
+export OPENAI_CHAT_KEY="sk-or-..."
+export OPENAI_CHAT_MODEL="meta-llama/llama-3.1-70b-instruct"
+
+probeagent attack https://agent.example.com/api --redteam --profile standard
+```
+
+Without the extra, `--redteam` exits with a clear message telling you to install it. The
+attacker LLM is separate from the agent under test.
 
 ## Responsible Use
 
@@ -484,7 +498,7 @@ Unauthorized use of this tool against systems you don't own or have permission t
 
 ## Attribution
 
-ProbeAgent's indirect injection and config manipulation attacks are inspired by research from [Zenity Labs](https://labs.zenity.io). PyRIT integration uses components from [Microsoft PyRIT](https://github.com/Azure/PyRIT) (MIT License). See [ATTRIBUTION.md](ATTRIBUTION.md) for full credits.
+ProbeAgent's indirect injection and config manipulation attacks are inspired by research from [Zenity Labs](https://labs.zenity.io), and its social-manipulation strategies draw on Cialdini's persuasion research. The optional `--redteam` mode is powered by [Microsoft PyRIT](https://github.com/Azure/PyRIT) (MIT License). See [ATTRIBUTION.md](ATTRIBUTION.md) for full credits.
 
 ## Development
 
@@ -509,7 +523,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for full development guidelines.
 - [x] CLI, HTTP target, scoring, 4 output formats (terminal, markdown, json, log)
 - [x] 12 attack categories, 85 multi-turn strategies
 - [x] OpenClaw target adapter, parallel execution, Tactical Display UI
-- [x] Zenity-inspired attacks, CVE-based agentic exploitation, PyRIT integration
+- [x] Zenity-inspired attacks, CVE-based agentic exploitation, native evasion converters, PyRIT-powered dynamic red-teaming
 - [x] MCP target adapter with tool-poisoning detection, raw-endpoint `--model`, external seed corpora (`--seeds`)
 - [x] CI/CD gating (`--fail-on`, exit codes, GitHub Action)
 - [ ] Environment-grounded outcome verification for tool-based categories (observe real tool calls / egress / filesystem effects, not just text)

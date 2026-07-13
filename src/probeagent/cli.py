@@ -138,12 +138,12 @@ def attack(
         None,
         "--converters",
         "-c",
-        help="PyRIT evasion converters (comma-separated or preset: basic, advanced, stealth).",
+        help="Evasion converters, comma-separated or a preset (basic, advanced, stealth).",
     ),
     redteam: bool = typer.Option(
         False,
         "--redteam",
-        help="Use PyRIT RedTeamingOrchestrator for dynamic LLM-driven attacks.",
+        help="Dynamic red-team via PyRIT's adaptive attacker (requires the 'pyrit' extra).",
     ),
     header: Optional[list[str]] = typer.Option(
         None,
@@ -212,7 +212,7 @@ def attack(
     # Parse converter argument
     converter_list = None
     if converters:
-        from probeagent.integrations.pyrit_converters import parse_converter_arg
+        from probeagent.integrations.converters import parse_converter_arg
 
         converter_list = parse_converter_arg(converters)
 

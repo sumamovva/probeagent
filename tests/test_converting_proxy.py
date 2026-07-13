@@ -8,7 +8,6 @@ import pytest
 
 from probeagent.core.models import TargetInfo
 from probeagent.integrations.converting_proxy import ConvertingTargetProxy
-from probeagent.integrations.pyrit_converters import is_pyrit_available
 
 
 @pytest.fixture
@@ -41,7 +40,7 @@ class TestConvertingTargetProxy:
 
         mock_apply = AsyncMock(return_value="converted_prompt")
         with patch(
-            "probeagent.integrations.pyrit_converters.apply_converters",
+            "probeagent.integrations.converters.apply_converters",
             mock_apply,
         ):
             result = await proxy.send("original_prompt")
@@ -49,10 +48,11 @@ class TestConvertingTargetProxy:
             mock_inner_target.send.assert_called_once_with("converted_prompt")
 
     @pytest.mark.asyncio
-    async def test_proxy_without_pyrit_raises(self, mock_inner_target):
-        """Without PyRIT, send raises ImportError from apply_converters."""
-        if is_pyrit_available():
-            pytest.skip("PyRIT is installed — cannot test import error path")
+    async def test_proxy_actually_converts(self, mock_inner_target):
+        """End-to-end: the proxy base64-encodes the prompt before sending (no mocks)."""
+        import base64
+
         proxy = ConvertingTargetProxy(mock_inner_target, ["base64"])
-        with pytest.raises(ImportError, match="PyRIT is required"):
-            await proxy.send("test prompt")
+        await proxy.send("original_prompt")
+        sent = mock_inner_target.send.call_args[0][0]
+        assert base64.b64decode(sent).decode() == "original_prompt"

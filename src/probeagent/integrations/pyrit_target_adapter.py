@@ -1,70 +1,69 @@
 # Copyright 2025 Suma Movva
 # SPDX-License-Identifier: Apache-2.0
 
-"""PyRIT target adapter — wraps a ProbeAgent Target so PyRIT orchestrators can attack it.
+"""Adapter exposing a ProbeAgent Target as a PyRIT ``PromptChatTarget``.
 
-Usage (requires PyRIT installed):
-
-    from probeagent.targets.http_target import HTTPTarget
-    from probeagent.integrations.pyrit_target_adapter import ProbeAgentAsPyRITTarget
-
-    pa_target = HTTPTarget("http://localhost:8000/api/chat")
-    pyrit_target = ProbeAgentAsPyRITTarget(pa_target)
-    # Now pass pyrit_target to any PyRIT orchestrator
+Lets PyRIT's attack strategies (e.g. ``RedTeamingAttack``) drive any ProbeAgent
+target. Built against the PyRIT 0.14 API; guarded so the rest of ProbeAgent works
+without PyRIT installed.
 """
 
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from probeagent.targets.base import Target
+if TYPE_CHECKING:
+    from probeagent.targets.base import Target
 
 try:
-    from pyrit.models import PromptRequestResponse, PromptRequestPiece
-    from pyrit.prompt_target import PromptTarget
+    from pyrit.models import Message, MessagePiece
+    from pyrit.prompt_target import PromptChatTarget
 
-    _PYRIT_AVAILABLE = True
-except ImportError:
-    _PYRIT_AVAILABLE = False
-
-if TYPE_CHECKING or _PYRIT_AVAILABLE:
-    if _PYRIT_AVAILABLE:
-
-        class ProbeAgentAsPyRITTarget(PromptTarget):
-            """Wraps a ProbeAgent Target so PyRIT orchestrators can send prompts to it."""
-
-            def __init__(self, inner: Target) -> None:
-                super().__init__()
-                self._inner = inner
-
-            async def send_prompt_async(
-                self, *, prompt_request: PromptRequestResponse
-            ) -> PromptRequestResponse:
-                """Send the prompt through the ProbeAgent target and return a response."""
-                request_pieces = prompt_request.request_pieces
-                if not request_pieces:
-                    raise ValueError("Empty prompt request")
-
-                prompt_text = request_pieces[0].original_value
-                response_text = await self._inner.send(prompt_text)
-
-                response_piece = PromptRequestPiece(
-                    role="assistant",
-                    original_value=response_text,
-                    converted_value=response_text,
-                    original_value_data_type="text",
-                    converted_value_data_type="text",
-                    prompt_target_identifier=self.get_identifier(),
-                )
-                return PromptRequestResponse(request_pieces=[response_piece])
-
-            def get_identifier(self) -> dict:
-                return {
-                    "__type__": "ProbeAgentAsPyRITTarget",
-                    "inner": str(type(self._inner).__name__),
-                }
+    _HAS_PYRIT = True
+except ImportError:  # pragma: no cover - exercised only without the extra
+    _HAS_PYRIT = False
 
 
 def is_adapter_available() -> bool:
-    """Return True if the PyRIT target adapter class is usable."""
-    return _PYRIT_AVAILABLE
+    """True when PyRIT is importable and the adapter can be used."""
+    return _HAS_PYRIT
+
+
+if _HAS_PYRIT:
+
+    class ProbeAgentAsPyRITTarget(PromptChatTarget):
+        """Wraps a ProbeAgent ``Target`` so PyRIT can send prompts to it.
+
+        PyRIT owns the conversation; each turn we forward the latest attacker
+        message to the ProbeAgent target and return its reply as a PyRIT ``Message``.
+        """
+
+        def __init__(self, target: "Target") -> None:
+            super().__init__()
+            self._target = target
+            # (attacker_prompt, agent_reply) pairs, for building a transcript afterwards.
+            self.turns: list[tuple[str, str]] = []
+
+        async def _send_prompt_to_target_async(
+            self, *, normalized_conversation: list["Message"]
+        ) -> list["Message"]:
+            prompt = normalized_conversation[-1].get_value()
+            reply = await self._target.send(prompt)
+            self.turns.append((prompt, reply or ""))
+            return [
+                Message(
+                    message_pieces=[
+                        MessagePiece(
+                            role="assistant",
+                            original_value=reply or "",
+                            original_value_data_type="text",
+                        )
+                    ]
+                )
+            ]
+
+        def _validate_request(self, **kwargs: object) -> None:  # noqa: D401
+            """No provider-specific constraints on a ProbeAgent target."""
+
+        def is_json_response_supported(self) -> bool:
+            return False
