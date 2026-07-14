@@ -3,7 +3,7 @@
 
 """ProbeAgent - Offensive security testing for AI agents."""
 
-__version__ = "0.3.3"
+__version__ = "0.3.4"
 
 from probeagent.core.engine import AttackEngine
 from probeagent.core.models import ProbeConfig, ResilienceScore, TargetInfo

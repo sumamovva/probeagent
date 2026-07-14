@@ -91,10 +91,11 @@ def _model_reply(messages: list[Message]) -> str:
 
     url = f"{base}/chat/completions"
     headers = {"Authorization": f"Bearer {os.environ['OPENAI_API_KEY']}"}
+    timeout = httpx.Timeout(connect=10, read=90, write=10, pool=10)
     r = None
-    for attempt in range(5):
+    for attempt in range(3):
         try:
-            r = httpx.post(url, json=payload, headers=headers, timeout=90)
+            r = httpx.post(url, json=payload, headers=headers, timeout=timeout)
             if r.status_code in (429, 500, 502, 503, 504):
                 time.sleep(2 * (attempt + 1))
                 continue
@@ -151,4 +152,9 @@ def chat(req: ChatRequest) -> dict:
 
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="127.0.0.1", port=int(os.environ.get("PORT", "8800")), log_level="warning")
+    uvicorn.run(
+        app,
+        host="127.0.0.1",
+        port=int(os.environ.get("PORT", "8800")),
+        log_level=os.environ.get("LOG_LEVEL", "warning"),
+    )

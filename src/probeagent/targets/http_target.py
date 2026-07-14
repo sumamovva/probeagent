@@ -5,6 +5,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import time
 
 import httpx
@@ -95,7 +96,7 @@ class HTTPTarget(Target):
             ping = {"messages": [{"role": "user", "content": "ping"}]}
             if self.model:
                 ping["model"] = self.model
-            resp = await client.post(self.url, json=ping)
+            resp = await asyncio.wait_for(client.post(self.url, json=ping), timeout=self.timeout)
             elapsed_ms = (time.monotonic() - start) * 1000
 
             fmt = self._detect_format(resp)
@@ -183,7 +184,12 @@ class HTTPTarget(Target):
             payload = {"prompt": prompt}
 
         start = time.monotonic()
-        resp = await client.post(self.url, json=payload)
+        # httpx's client timeout is per-read, so a target that trickles bytes (or a
+        # proxy holding the connection open during a long upstream call) can hang a
+        # scan far past --timeout. asyncio.wait_for enforces a TRUE total deadline:
+        # a slow/stuck target raises TimeoutError, which the attack loop records as an
+        # ERROR instead of freezing the run.
+        resp = await asyncio.wait_for(client.post(self.url, json=payload), timeout=self.timeout)
         latency_ms = round((time.monotonic() - start) * 1000, 1)
 
         raw_body = resp.text

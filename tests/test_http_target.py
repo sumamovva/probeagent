@@ -72,6 +72,28 @@ class TestHTTPTargetValidate:
 
     @respx.mock
     @pytest.mark.asyncio
+    async def test_slow_target_times_out_bounded_not_hang(self):
+        # A target that takes far longer than --timeout must raise a timeout within
+        # ~timeout (a TOTAL deadline), not hang for the full response time. Regression
+        # for scans freezing 10-75 min on slow/trickling targets.
+        import asyncio
+        import time as _time
+
+        async def slow(request):
+            await asyncio.sleep(5)
+            return httpx.Response(200, json={"choices": [{"message": {"content": "late"}}]})
+
+        respx.post("https://slow.example/v1/chat/completions").mock(side_effect=slow)
+        target = HTTPTarget("https://slow.example/v1/chat/completions", timeout=0.5)
+        start = _time.monotonic()
+        with pytest.raises((asyncio.TimeoutError, TimeoutError)):
+            await target.send("hello")
+        elapsed = _time.monotonic() - start
+        await target.close()
+        assert elapsed < 3.0  # bounded by ~timeout (0.5s), nowhere near the 5s response
+
+    @respx.mock
+    @pytest.mark.asyncio
     async def test_chat_completions_url_forces_openai_format_despite_failed_ping(self):
         # The validation ping errors (502, no 'choices') — but a /chat/completions
         # endpoint is definitively OpenAI-compatible, so format must NOT fall back to

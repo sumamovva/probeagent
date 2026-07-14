@@ -5,6 +5,21 @@ All notable changes to ProbeAgent are documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.4] - 2026-07-15
+
+### Fixed
+- **`--timeout` is now a true total request deadline, so a scan can't hang on a slow target.**
+  It previously mapped to httpx's *per-read* timeout, so a target that trickled bytes — or a proxy
+  holding the connection open during a long upstream model call — was never cut off, freezing a
+  scan for many minutes. Each attack request (and the reachability probe) is now bounded by
+  `asyncio.wait_for(..., timeout=--timeout)`; a slow/stuck target raises a timeout that the attack
+  loop records as an ERROR (per 0.3.3) instead of hanging. Matters most against reasoning-model
+  backends and rate-limited providers.
+
+### Changed
+- Demo agents (`tools/leaky_agent.py`, `tools/realistic_agent.py`) use an explicit
+  `httpx.Timeout` and a tighter retry budget so a stuck upstream call fails fast.
+
 ## [0.3.3] - 2026-07-14
 
 ### Fixed

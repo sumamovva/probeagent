@@ -167,7 +167,7 @@ def _call_model(convo: list[dict]) -> dict:
         f"{base}/chat/completions",
         json=payload,
         headers={"Authorization": f"Bearer {os.environ['OPENAI_API_KEY']}"},
-        timeout=90,
+        timeout=httpx.Timeout(connect=10, read=90, write=10, pool=10),
     )
     r.raise_for_status()
     return r.json()
@@ -237,4 +237,6 @@ def chat(req: ChatRequest) -> dict:
 
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="127.0.0.1", port=int(os.environ.get("PORT", "8800")), log_level="warning")
+    uvicorn.run(
+        app, host="127.0.0.1", port=int(os.environ.get("PORT", "8800")), log_level="warning"
+    )
