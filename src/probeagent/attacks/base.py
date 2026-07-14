@@ -170,7 +170,9 @@ class BaseAttack(ABC):
             canary_hit = bool(canary) and any(
                 canary.lower() in t.content.lower() for t in conversation if t.role == "target"
             )
-            succeeded = self._is_success(best, all_secrets, all_hard_secrets, canary_hit, pattern_hit)
+            succeeded = self._is_success(
+                best, all_secrets, all_hard_secrets, canary_hit, pattern_hit
+            )
             verdict = classify_response(succeeded=succeeded, signals=last_signals)
 
             return AttackResult(

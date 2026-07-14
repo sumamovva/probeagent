@@ -47,7 +47,9 @@ class TestSocialManipulationAttack:
             assert result.success is False
 
     @pytest.mark.asyncio
-    async def test_hard_credential_leak_compromises_without_counts_secrets(self, attack, mock_target):
+    async def test_hard_credential_leak_compromises_without_counts_secrets(
+        self, attack, mock_target
+    ):
         # social_manipulation does NOT opt into counts_secrets, but a real credential
         # token in the reply is an objective leak — a compromise regardless of vector.
         # Regression for the 78%-recall grader gap (leaked keys graded "Resisted").
