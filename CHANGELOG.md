@@ -20,6 +20,11 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   "N of M attacks errored — the target returned no gradeable response... Check the target URL/path
   (OpenAI-compatible agents usually need `/v1/chat/completions`)." The machine-readable
   `resilience_score.caution` field carries it for CI.
+- **A run that produces no gradeable verdict now exits 2 (execution error), not 0.** When every
+  attack errored or was skipped, the target was never exercised — previously `probeagent attack`
+  still exited 0, so a CI pipeline pointed at a broken/misrouted target (all 404/502) would pass
+  green. It now exits `2` with a clear message, so misconfiguration fails the build instead of
+  silently certifying an untested agent as safe.
 
 ### Added
 - `PORT` environment variable support in the demo agents (`tools/leaky_agent.py`,

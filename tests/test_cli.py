@@ -52,6 +52,19 @@ class TestExitCodes:
         )
         assert result.exit_code == 2
 
+    @respx.mock
+    def test_all_errored_target_exits_two_not_zero(self):
+        # Reachable (returns HTTP responses) but every attack 404s — the classic
+        # wrong-endpoint-path misconfig. Must NOT exit 0: a broken target that
+        # produces no gradeable verdict is an execution error, not a clean pass,
+        # or CI pointed at a misrouted URL would go green.
+        respx.post("https://misrouted.example/").mock(
+            return_value=httpx.Response(404, json={"detail": "Not Found"})
+        )
+        result = runner.invoke(app, ["attack", "https://misrouted.example/", "-p", "quick"])
+        assert result.exit_code == 2
+        assert "not a pass" in result.output
+
     def test_invalid_fail_on_exits_two(self):
         result = runner.invoke(
             app, ["attack", "mock://vulnerable", "--target-type", "mock", "--fail-on", "bogus"]

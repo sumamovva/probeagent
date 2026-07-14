@@ -334,6 +334,18 @@ def attack(
             f"{score.resisted} Resisted)."
         )
         raise typer.Exit(EXIT_FINDINGS)
+
+    # No attack produced a gradeable verdict — every one errored or was skipped, so
+    # the target was never actually exercised. This must NOT read as a clean pass:
+    # a broken/misrouted target (e.g. all 404/502) would otherwise turn CI green.
+    if score.headline_verdict is None and score.total > 0:
+        console.print(
+            f"\n[red]ERROR:[/red] no attack produced a gradeable result "
+            f"({score.errors} errored of {score.total}). The target was not exercised — "
+            "this is not a pass. Check the target URL/path (OpenAI-compatible agents "
+            "usually need /v1/chat/completions) and that the target is reachable."
+        )
+        raise typer.Exit(EXIT_EXECUTION_ERROR)
     raise typer.Exit(EXIT_OK)
 
 
