@@ -85,12 +85,24 @@ def _model_reply(messages: list[Message]) -> str:
         # false "resisted". Keep it small; a leaked secret is short.
         "max_tokens": int(os.environ.get("MAX_TOKENS", "1024")),
     }
-    r = httpx.post(
-        f"{base}/chat/completions",
-        json=payload,
-        headers={"Authorization": f"Bearer {os.environ['OPENAI_API_KEY']}"},
-        timeout=60,
-    )
+    # Retry transient upstream failures (rate-limit / gateway / timeout) so a busy
+    # provider doesn't turn a probe into a spurious error. Deterministic backoff.
+    import time
+
+    url = f"{base}/chat/completions"
+    headers = {"Authorization": f"Bearer {os.environ['OPENAI_API_KEY']}"}
+    r = None
+    for attempt in range(5):
+        try:
+            r = httpx.post(url, json=payload, headers=headers, timeout=90)
+            if r.status_code in (429, 500, 502, 503, 504):
+                time.sleep(2 * (attempt + 1))
+                continue
+            break
+        except (httpx.TimeoutException, httpx.TransportError):
+            time.sleep(2 * (attempt + 1))
+    if r is None:
+        raise httpx.TransportError("upstream unreachable after retries")
     r.raise_for_status()
     msg = r.json()["choices"][0]["message"]
     # Some (reasoning) models return the text in `reasoning`/`reasoning_content` with a
