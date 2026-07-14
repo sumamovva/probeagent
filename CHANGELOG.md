@@ -25,6 +25,11 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   still exited 0, so a CI pipeline pointed at a broken/misrouted target (all 404/502) would pass
   green. It now exits `2` with a clear message, so misconfiguration fails the build instead of
   silently certifying an untested agent as safe.
+- **Format detection no longer collapses on a single bad validation ping.** A `/chat/completions`
+  URL or an explicit `--model` is now treated as authoritative for the OpenAI-compatible payload
+  shape. Previously, if the one-shot validation ping rate-limited or errored, detection fell back
+  to a generic shape and *every* subsequent attack sent a payload the agent rejected (a wall of
+  HTTP 422s), silently invalidating the whole run.
 
 - **Leaked credentials are now detected regardless of which attack surfaced them
   (grader recall 78% → 99% on real transcripts).** Previously a leaked API key only

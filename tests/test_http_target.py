@@ -72,6 +72,25 @@ class TestHTTPTargetValidate:
 
     @respx.mock
     @pytest.mark.asyncio
+    async def test_chat_completions_url_forces_openai_format_despite_failed_ping(self):
+        # The validation ping errors (502, no 'choices') — but a /chat/completions
+        # endpoint is definitively OpenAI-compatible, so format must NOT fall back to
+        # json_api (which would make every attack send the wrong payload -> HTTP 422).
+        respx.post("https://api.example/v1/chat/completions").mock(
+            return_value=httpx.Response(
+                502,
+                json={"detail": "upstream model error"},
+                headers={"content-type": "application/json"},
+            )
+        )
+        target = HTTPTarget("https://api.example/v1/chat/completions")
+        info = await target.validate()
+        await target.close()
+        assert info.detected_format == "openai_chat"
+        assert target._detected_format == "openai_chat"
+
+    @respx.mock
+    @pytest.mark.asyncio
     async def test_reachable_openai_format(self):
         respx.post("https://example.com/v1/chat/completions").mock(
             return_value=httpx.Response(

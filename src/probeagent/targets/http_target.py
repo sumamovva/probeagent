@@ -99,6 +99,13 @@ class HTTPTarget(Target):
             elapsed_ms = (time.monotonic() - start) * 1000
 
             fmt = self._detect_format(resp)
+            # A /chat/completions path or an explicit --model is a definitive
+            # OpenAI-compatible signal. Trust it over the ping response: a single
+            # ping that rate-limited, timed out, or errored must not lock in the
+            # wrong format and mis-route every subsequent attack to a payload the
+            # agent rejects (observed as a wall of HTTP 422s).
+            if self.model or self._url_is_openai_chat():
+                fmt = "openai_chat"
             self._detected_format = fmt
 
             return TargetInfo(
@@ -126,6 +133,10 @@ class HTTPTarget(Target):
                 reachable=False,
                 error=str(exc),
             )
+
+    def _url_is_openai_chat(self) -> bool:
+        """Whether the target URL is an OpenAI-compatible chat-completions endpoint."""
+        return self.url.rstrip("/").endswith("chat/completions")
 
     def _detect_format(self, resp: httpx.Response) -> str:
         content_type = resp.headers.get("content-type", "")
