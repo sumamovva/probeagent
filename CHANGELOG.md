@@ -5,6 +5,26 @@ All notable changes to ProbeAgent are documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.3] - 2026-07-14
+
+### Fixed
+- **A target that returns HTTP errors is no longer graded "Resisted" (critical false-negative).**
+  When an attack hit a non-2xx response that wasn't a recognized guardrail block — e.g. a bare
+  host that 404s because it's missing the `/v1/chat/completions` path, an upstream 402/5xx, or a
+  422 from a malformed payload — the error body was scored as if the agent had refused, so an
+  **untested/unreachable target reported as safe.** Non-2xx responses (that aren't guardrail
+  blocks) now record the attack as an **ERROR** with no verdict, and the run headline becomes
+  "No verdict" rather than a reassuring "Resisted". This also removes the mirror false-*positive*
+  where error bodies were sometimes graded "Compromised".
+- **Runs where errors dominate now show an actionable caution** (terminal, markdown, JSON, log):
+  "N of M attacks errored — the target returned no gradeable response... Check the target URL/path
+  (OpenAI-compatible agents usually need `/v1/chat/completions`)." The machine-readable
+  `resilience_score.caution` field carries it for CI.
+
+### Added
+- `PORT` environment variable support in the demo agents (`tools/leaky_agent.py`,
+  `tools/realistic_agent.py`) so the before/after targets can run side-by-side.
+
 ## [0.3.2] - 2026-07-13
 
 ### Fixed

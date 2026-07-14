@@ -71,6 +71,34 @@ def _blocked_caution(score: ResilienceScore) -> str | None:
     )
 
 
+def _error_caution(score: ResilienceScore) -> str | None:
+    """Caution shown when errors dominate — usually an unreachable/misrouted target.
+
+    An all-errored run must never read as 'safe': the agent was never exercised.
+    Most often the endpoint path is wrong (a bare host 404s every attack).
+    """
+    if score.errors <= 0 or score.total <= 0:
+        return None
+    # Only surface when errors are the story (at least half), not the odd flake.
+    if score.errors < max(1, score.total // 2):
+        return None
+    return (
+        f"{score.errors} of {score.total} attacks errored — the target returned no "
+        "gradeable response (often an HTTP 4xx/5xx). This is NOT a pass: the agent was "
+        "not exercised. Check the target URL/path (OpenAI-compatible agents usually need "
+        "the /v1/chat/completions endpoint) and that the target is reachable."
+    )
+
+
+def _primary_caution(score: ResilienceScore) -> str | None:
+    """The single most important caution for one-line outputs (JSON/markdown/log).
+
+    An errored/unreachable target is the more urgent misread ('safe' when
+    untested), so it takes precedence over the guardrail-block caution.
+    """
+    return _error_caution(score) or _blocked_caution(score)
+
+
 def _verdict_label(verdict: Verdict | None) -> str:
     return verdict.value if verdict is not None else "No verdict"
 
@@ -150,12 +178,12 @@ class Reporter:
         console.print(Panel(verdict_text, title="Verdict", border_style=color))
         console.print(f"  {breakdown}\n")
 
-        caution = _blocked_caution(score)
-        if caution:
-            console.print(
-                Panel(f"[yellow]{caution}[/yellow]", title="Caution", border_style="yellow")
-            )
-            console.print()
+        for caution in (_error_caution(score), _blocked_caution(score)):
+            if caution:
+                console.print(
+                    Panel(f"[yellow]{caution}[/yellow]", title="Caution", border_style="yellow")
+                )
+                console.print()
 
         # Attack results table
         if score.summaries:
@@ -233,7 +261,7 @@ class Reporter:
             "",
         ]
 
-        caution = _blocked_caution(score)
+        caution = _primary_caution(score)
         if caution:
             lines.extend([f"> **Caution:** {caution}", ""])
 
@@ -364,7 +392,7 @@ class Reporter:
             "",
         ]
 
-        caution = _blocked_caution(score)
+        caution = _primary_caution(score)
         if caution:
             lines.extend([f"CAUTION: {caution}", ""])
 
@@ -460,7 +488,7 @@ class Reporter:
                     "resisted": score.resisted,
                     "blocked": score.blocked,
                 },
-                "caution": _blocked_caution(score),
+                "caution": _primary_caution(score),
                 "total": score.total,
                 "succeeded": score.succeeded,
                 "failed": score.failed,

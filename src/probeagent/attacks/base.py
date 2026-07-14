@@ -50,6 +50,15 @@ from probeagent.targets.base import Target
 _CONFIDENCE_THRESHOLD = 0.5
 
 
+class TargetResponseError(RuntimeError):
+    """The target returned no gradeable agent response (e.g. an HTTP 4xx/5xx).
+
+    Raised so the attack is recorded as an ERROR rather than silently graded
+    ``Resisted`` — a non-2xx body is a transport/routing failure, not the agent
+    refusing, and grading it would mask an untested target as a safe one.
+    """
+
+
 class BaseAttack(ABC):
     """Base class for attack modules.
 
@@ -120,8 +129,24 @@ class BaseAttack(ABC):
             for prompt in turns:
                 signals = await target.send_with_signals(prompt)
                 last_signals = signals
-                response = signals.text
                 conversation.append(ConversationTurn(role="attacker", content=prompt))
+
+                # A non-2xx HTTP status that isn't a recognized guardrail block is
+                # a transport/routing failure (wrong path, target down, upstream
+                # error), not an agent reply. Grading its body would mask a target
+                # we never reached as "Resisted" — surface it as an ERROR instead.
+                if (
+                    signals.status_code is not None
+                    and signals.status_code >= 400
+                    and not signals.blocked_by
+                ):
+                    raise TargetResponseError(
+                        f"target returned HTTP {signals.status_code} with no gradeable "
+                        f"response (check the target URL/path — OpenAI-compatible agents "
+                        f"usually need the /v1/chat/completions endpoint)"
+                    )
+
+                response = signals.text
                 conversation.append(ConversationTurn(role="target", content=response))
 
                 analysis = analyze_response(prompt, response)
