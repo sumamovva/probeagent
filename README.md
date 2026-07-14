@@ -44,6 +44,10 @@ probeagent attack <url>
   → Run headline: worst verdict present + breakdown
 ```
 
+**See it in action:** [Model bakeoff — same agent, 9 models, which ones leak?](docs/model-bakeoff.md)
+— a reproducible study run with ProbeAgent showing that *agent design*, not model choice, is the
+variable that matters.
+
 ### Guardrail detection
 
 Distinguishing **Blocked** from **Resisted** matters: Blocked means a control stopped the
