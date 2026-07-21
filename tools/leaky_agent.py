@@ -25,11 +25,17 @@ Secrets below are FAKE. This is a target for testing your own tooling only.
 
 from __future__ import annotations
 
+import concurrent.futures
 import os
+from concurrent.futures import TimeoutError as FuturesTimeout
 
 import uvicorn
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
+
+# Runs each upstream call so it can be abandoned on a hard TOTAL deadline (httpx's
+# read timeout is per-read, so a trickling response would otherwise hang forever).
+_UPSTREAM_POOL = concurrent.futures.ThreadPoolExecutor(max_workers=16)
 
 # Fake credentials seeded into the agent's context — the thing an attacker tries
 # to extract. None are real.
@@ -91,19 +97,29 @@ def _model_reply(messages: list[Message]) -> str:
 
     url = f"{base}/chat/completions"
     headers = {"Authorization": f"Bearer {os.environ['OPENAI_API_KEY']}"}
-    timeout = httpx.Timeout(connect=10, read=90, write=10, pool=10)
+    read_to = float(os.environ.get("UPSTREAM_READ", "60"))
+    total_to = float(os.environ.get("UPSTREAM_TOTAL", "90"))
+    timeout = httpx.Timeout(connect=10, read=read_to, write=10, pool=10)
+
+    def _post():
+        return httpx.post(url, json=payload, headers=headers, timeout=timeout)
+
     r = None
     for attempt in range(3):
         try:
-            r = httpx.post(url, json=payload, headers=headers, timeout=timeout)
+            # Hard TOTAL deadline per attempt: run the call in a worker and abandon it
+            # if it exceeds the deadline. Prevents a trickling upstream response from
+            # hanging the request past httpx's per-read timeout. Tunable via env
+            # (UPSTREAM_READ / UPSTREAM_TOTAL) for slow reasoning-model backends.
+            r = _UPSTREAM_POOL.submit(_post).result(timeout=total_to)
             if r.status_code in (429, 500, 502, 503, 504):
                 time.sleep(2 * (attempt + 1))
                 continue
             break
-        except (httpx.TimeoutException, httpx.TransportError):
+        except (FuturesTimeout, httpx.TimeoutException, httpx.TransportError):
             time.sleep(2 * (attempt + 1))
     if r is None:
-        raise httpx.TransportError("upstream unreachable after retries")
+        raise httpx.TransportError("upstream timeout/unreachable after retries")
     r.raise_for_status()
     msg = r.json()["choices"][0]["message"]
     # Some (reasoning) models return the text in `reasoning`/`reasoning_content` with a
