@@ -65,6 +65,9 @@ _TARGET_TYPES = {
 }
 
 console = Console()
+# Human chrome (config panel, progress, status lines) is routed here in machine-output
+# modes so stdout carries ONLY the report and stays pipeable, e.g. `-o json | jq`.
+err_console = Console(stderr=True)
 
 # CI-meaningful exit codes.
 EXIT_OK = 0  # scan completed, nothing at/above --fail-on
@@ -271,7 +274,9 @@ def attack(
     )
     if config.model:
         config_text += f"\nModel:    {config.model}"
-    console.print(Panel(config_text, title="Attack Configuration", border_style="blue"))
+    # In machine-output modes, all human chrome goes to stderr so stdout is pure report.
+    chrome = console if output_format == OutputFormat.TERMINAL else err_console
+    chrome.print(Panel(config_text, title="Attack Configuration", border_style="blue"))
 
     # Validate target
     target_kwargs: dict = {"timeout": timeout, "headers": parsed_headers}
@@ -282,17 +287,17 @@ def attack(
     info = asyncio.run(_validate_target(target))
 
     if not info.reachable:
-        console.print(f"\n[red]Target unreachable:[/red] {info.error}")
+        chrome.print(f"\n[red]Target unreachable:[/red] {info.error}")
         raise typer.Exit(EXIT_EXECUTION_ERROR)
 
-    console.print(
+    chrome.print(
         f"\n[green]Target reachable[/green] — "
         f"format: {info.detected_format}, "
         f"latency: {info.response_time_ms}ms"
     )
 
     # Run attacks
-    status = console.status("[bold]Running attacks...[/bold]", spinner="dots")
+    status = chrome.status("[bold]Running attacks...[/bold]", spinner="dots")
     status.start()
 
     def on_progress(name: str, current: int, total: int) -> None:
@@ -304,11 +309,11 @@ def attack(
         results = asyncio.run(engine.run())
     except ConnectionError as e:
         status.stop()
-        console.print(f"[red]Error:[/red] {e}")
+        chrome.print(f"[red]Error:[/red] {e}")
         raise typer.Exit(EXIT_EXECUTION_ERROR)
     except Exception as e:
         status.stop()
-        console.print(f"[red]Attack engine error:[/red] {e}")
+        chrome.print(f"[red]Attack engine error:[/red] {e}")
         raise typer.Exit(EXIT_EXECUTION_ERROR)
     finally:
         status.stop()
@@ -318,17 +323,20 @@ def attack(
     reporter = Reporter()
     report_text = reporter.report(score, info, config, output_format, output_file)
 
+    # The report goes to stdout. In machine modes write it RAW via print() — routing it
+    # through console.print would mangle JSON (brackets parse as rich markup, long lines
+    # soft-wrap). Chrome goes to stderr so `-o json | jq` sees only clean JSON.
     if output_format == OutputFormat.TERMINAL:
         console.print(report_text)
     else:
-        console.print(report_text)
+        print(report_text)
         if output_file:
-            console.print(f"\n[green]Report written to:[/green] {output_file}")
+            chrome.print(f"\n[green]Report written to:[/green] {output_file}")
 
     # CI gate: fail (exit 1) when findings reach the --fail-on threshold. The scan
     # itself completed successfully, so this is distinct from an execution error (2).
     if meets_fail_threshold(score, fail_on):
-        console.print(
+        chrome.print(
             f"\n[red]FAIL:[/red] findings at or above --fail-on '{fail_on}' "
             f"({score.compromised} Compromised · {score.blocked} Blocked · "
             f"{score.resisted} Resisted)."
@@ -339,7 +347,7 @@ def attack(
     # the target was never actually exercised. This must NOT read as a clean pass:
     # a broken/misrouted target (e.g. all 404/502) would otherwise turn CI green.
     if score.headline_verdict is None and score.total > 0:
-        console.print(
+        chrome.print(
             f"\n[red]ERROR:[/red] no attack produced a gradeable result "
             f"({score.errors} errored of {score.total}). The target was not exercised — "
             "this is not a pass. Check the target URL/path (OpenAI-compatible agents "

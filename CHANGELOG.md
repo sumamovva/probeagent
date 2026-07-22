@@ -5,6 +5,17 @@ All notable changes to ProbeAgent are documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.5] - 2026-07-21
+
+### Fixed
+- **`-o json` (and `-o markdown` / `-o log`) is now cleanly pipeable.** The config panel,
+  "Target reachable" line, progress spinner, and CI-gate messages were printed to **stdout**,
+  polluting machine output — so `probeagent attack … -o json | jq` failed (the report parsed as
+  invalid JSON). All human chrome now goes to **stderr** in non-terminal output modes, and the
+  report is written raw (not through Rich, which mangled JSON by parsing `[...]` as markup and
+  soft-wrapping long lines). `stdout` now carries only the report; the documented "structured
+  JSON → pipe into a remediation step / gate CI" workflow works as advertised.
+
 ## [0.3.4] - 2026-07-15
 
 ### Fixed

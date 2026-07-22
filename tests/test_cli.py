@@ -65,6 +65,32 @@ class TestExitCodes:
         assert result.exit_code == 2
         assert "not a pass" in result.output
 
+    def test_json_output_is_clean_pipeable_stdout(self):
+        # `-o json` must put ONLY the JSON on stdout — human chrome (config panel,
+        # "Target reachable") goes to stderr — so `probeagent attack ... -o json | jq`
+        # works. Regression: the rich panel used to pollute stdout and break parsing.
+        import json as _json
+
+        result = runner.invoke(
+            app,
+            [
+                "attack",
+                "mock://vulnerable",
+                "--target-type",
+                "mock",
+                "-p",
+                "quick",
+                "-o",
+                "json",
+                "--fail-on",
+                "never",
+            ],
+        )
+        data = _json.loads(result.stdout)  # raises if stdout isn't clean JSON
+        assert "attack_results" in data
+        assert "Attack Configuration" not in result.stdout
+        assert "Attack Configuration" in result.stderr
+
     def test_invalid_fail_on_exits_two(self):
         result = runner.invoke(
             app, ["attack", "mock://vulnerable", "--target-type", "mock", "--fail-on", "bogus"]
