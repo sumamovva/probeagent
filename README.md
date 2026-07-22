@@ -369,11 +369,16 @@ Launch the Tactical Display UI in your browser for interactive testing.
 
 ## Attack Profiles
 
-| Profile | Categories | Max Turns | Use Case |
-|---------|------------|-----------|----------|
-| `quick` | 5 high-priority | 1 | CI/CD gates, quick checks |
-| `standard` | All 12 | 3 | Regular security assessments |
-| `thorough` | All 12 | 10 | Pre-release deep scans |
+| Profile | Categories | Max Turns | Typical runtime\* | Use Case |
+|---------|------------|-----------|-------------------|----------|
+| `quick` | 5 high-priority | 1 | ~30–60s | CI/CD gates, quick checks |
+| `standard` | All 12 | 3 | ~2–5 min | Regular security assessments |
+| `thorough` | All 12 | 10 | ~10 min+ | Pre-release deep scans |
+
+\* Runtime scales with **your agent's** response latency — a slow or reasoning-model backend can add
+several minutes. A scan that looks stuck is almost always just waiting on the agent; since 0.3.4,
+`--timeout` is a hard per-request deadline, so a truly unresponsive target is recorded as an error
+rather than hanging.
 
 ## Using the output for remediation
 
