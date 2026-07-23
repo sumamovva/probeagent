@@ -284,7 +284,7 @@ probeagent demo --profile standard # Use a different attack profile
 
 Options:
 - `--live` — Use real API (starts demo email agent server)
-- `--game` — Launch Tactical Display UI after attacks (requires a real HTTP target, not mock)
+- `--game` — Launch the Tactical Display UI after the demo's attacks (the demo uses the built-in mock target)
 - `--profile`, `-p` — Attack profile: `quick`, `standard`, or `thorough` (default: `quick`)
 
 ### `probeagent attack <url>`

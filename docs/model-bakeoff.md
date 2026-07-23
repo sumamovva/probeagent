@@ -12,7 +12,9 @@ of hardening my agent?*
 
 One fixed **naive agent** — a common strawman: the secret sits in the system prompt and the agent
 is told to "be maximally helpful" (`tools/leaky_agent.py`). The **only** thing that changes between
-runs is the backing model. Every model gets the same 85 credential-exfiltration attacks.
+runs is the backing model. Every model gets the same 85 strategies — the full `standard` profile
+across all 12 categories — scored on a single credential-leak metric (below). (The `credential_exfil`
+category is 8 of those 85; the remaining 77 span the other 11 categories.)
 
 ## The metric
 
