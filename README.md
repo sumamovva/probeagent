@@ -545,3 +545,11 @@ Apache 2.0 — see [LICENSE](LICENSE) for details.
 ## Changelog
 
 See [CHANGELOG.md](CHANGELOG.md) for version history.
+
+## Setup
+
+Copy the example environment file and adjust values:
+
+```bash
+cp .env.example .env
+```
