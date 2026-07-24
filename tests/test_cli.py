@@ -1,6 +1,9 @@
 """Tests for the CLI."""
 
+import json
+
 import httpx
+import pytest
 import respx
 from typer.testing import CliRunner
 
@@ -145,6 +148,54 @@ class TestListAttacks:
         # OWASP codes surface in list-attacks.
         assert "ASI01:2026" in result.output
         assert "LLM10:2025" in result.output
+
+    def test_json_output_is_parseable_nonempty_registry_metadata(self):
+        from probeagent.attacks import ATTACK_REGISTRY
+
+        result = runner.invoke(app, ["list-attacks", "--json"])
+
+        assert result.exit_code == 0
+        attacks = json.loads(result.stdout)
+        assert result.stderr == ""
+        assert isinstance(attacks, list)
+        assert attacks
+        assert len(attacks) == len(ATTACK_REGISTRY)
+        assert "Available Attacks" not in result.stdout
+
+        expected_keys = {
+            "name",
+            "display_name",
+            "severity",
+            "framework_tags",
+            "atlas_tags",
+            "description",
+        }
+        for attack in attacks:
+            assert set(attack) == expected_keys
+            assert isinstance(attack["name"], str)
+            assert isinstance(attack["display_name"], str)
+            assert isinstance(attack["severity"], str)
+            assert isinstance(attack["framework_tags"], list)
+            assert isinstance(attack["atlas_tags"], list)
+            assert isinstance(attack["description"], str)
+
+            registry_entry = ATTACK_REGISTRY[attack["name"]]
+            assert attack["display_name"] == registry_entry["display_name"]
+            assert attack["severity"] == registry_entry["severity"].value
+            assert attack["framework_tags"] == list(registry_entry["framework_tags"])
+            assert attack["atlas_tags"] == list(registry_entry["atlas_tags"])
+            assert attack["description"] == registry_entry["description"]
+
+    def test_default_output_remains_rich_table_not_json(self):
+        result = runner.invoke(app, ["list-attacks"])
+
+        assert result.exit_code == 0
+        assert "Available Attacks" in result.output
+        assert "Severity" in result.output
+        assert "OWASP" in result.output
+        assert "Description" in result.output
+        with pytest.raises(json.JSONDecodeError):
+            json.loads(result.stdout)
 
 
 class TestInit:

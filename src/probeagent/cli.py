@@ -358,8 +358,31 @@ def attack(
 
 
 @app.command("list-attacks")
-def list_attacks() -> None:
+def list_attacks(
+    json_output: bool = typer.Option(
+        False,
+        "--json",
+        help="Emit attack metadata as JSON.",
+    ),
+) -> None:
     """List all available attack modules."""
+    if json_output:
+        import json
+
+        attacks = [
+            {
+                "name": name,
+                "display_name": info["display_name"],
+                "severity": info["severity"].value,
+                "framework_tags": list(info.get("framework_tags", ())),
+                "atlas_tags": list(info.get("atlas_tags", ())),
+                "description": info["description"],
+            }
+            for name, info in ATTACK_REGISTRY.items()
+        ]
+        typer.echo(json.dumps(attacks))
+        return
+
     table = Table(title="Available Attacks", show_lines=True)
     table.add_column("Name", style="bold")
     table.add_column("Severity")
