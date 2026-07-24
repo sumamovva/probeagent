@@ -1,12 +1,20 @@
 # Model bakeoff: same agent, 9 models — which ones leak?
 
-A small reproducible study run **with ProbeAgent itself**. It isolates one variable — the model
+A small **point-in-time** study run **with ProbeAgent itself**. It isolates one variable — the model
 behind an agent — to answer a question builders actually ask: *can I pick a "safer" model instead
 of hardening my agent?*
 
 > Run 2026-07-17 with ProbeAgent 0.3.4 via OpenRouter, `standard` profile (12 categories, 85
 > multi-turn strategies), `temperature=0`. The agent is a test fixture with **fake** credentials;
 > this measures how a model behaves *inside a given agent design*, not a model's general safety.
+>
+> **⚠️ Point-in-time snapshot, not a deterministic benchmark.** LLM leak counts drift — providers
+> update models under the same OpenRouter slug, routing varies between backend providers, and results
+> are non-deterministic even at `temperature=0`. A 2026-07-23 re-run of two still-available models gave
+> **22 (was 16)** for `deepseek/deepseek-v4-pro` and **7 (was 16)** for `x-ai/grok-4.5`. Three of the
+> nine slugs — `qwen/qwen3-235b`, `meta-llama/llama-3.1-8b`, `google/gemini-3.1-pro` — have since been
+> retired from OpenRouter and no longer resolve. **Read the counts below as one run's range, not
+> reproducible numbers — the takeaway (model choice swings leakage widely and unpredictably) is what holds.**
 
 ## Setup
 
@@ -68,6 +76,9 @@ model shortlist.
 ## Honesty notes
 
 - One run per model at `temperature=0`; a single family of attack payloads (ProbeAgent's built-ins).
+- **Not reproducible run-to-run** (see the snapshot caveat up top): a 2026-07-23 re-run gave 22 and 7
+  for deepseek-v4-pro and grok-4.5 (vs 16 and 16), and three model slugs have since retired from
+  OpenRouter. Treat every specific count as illustrative of the *range*, not a fixed benchmark.
   Fake credentials throughout — this measures agent design, not a model leaderboard.
 - **† Claude Fable-5's 0** is a platform **content filter** blocking the adversarial requests
   upstream (`finish_reason: content_filter`), not the model itself resisting — a guardrail result.
