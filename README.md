@@ -384,6 +384,8 @@ rather than hanging.
 
 ProbeAgent's JSON report gives you structured findings you can feed into any remediation workflow — including another AI agent set up to read attack results and suggest hardening steps.
 
+See the [JSON report schema](docs/json-schema.md) for the output contract, field meanings, and a copy-paste example.
+
 ```bash
 # Save findings as JSON
 probeagent attack https://your-agent.example.com/api --profile standard --output json -f findings.json
