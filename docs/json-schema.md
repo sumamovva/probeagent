@@ -71,7 +71,7 @@ objects. `metadata` is an object reserved for strategy-specific data.
 
 ```json
 {
-  "probeagent_version": "0.3.5",
+  "probeagent_version": "0.3.6",
   "timestamp": "2025-01-15T12:00:00+00:00",
   "target": {
     "url": "https://agent.example.com/v1/chat/completions",

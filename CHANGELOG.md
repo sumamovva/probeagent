@@ -5,6 +5,19 @@ All notable changes to ProbeAgent are documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.6] - 2026-07-24
+
+### Added
+- **`list-attacks --json`** emits attack metadata (name, display name, severity, framework
+  tags, ATLAS tags, description) as machine-readable JSON to stdout, with human chrome kept
+  off stdout so it pipes cleanly into `jq` — same contract as `attack -o json` (#26).
+- **`docs/json-schema.md`** documents the full `-o json` report schema for programmatic
+  consumers (#29).
+
+### Tests
+- Added unit tests for five previously-untested attack modules — `data_exfil`,
+  `goal_hijacking`, `prompt_injection`, `seed_corpus`, `tool_misuse` (#27).
+
 ## [0.3.5] - 2026-07-21
 
 ### Fixed
