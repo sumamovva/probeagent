@@ -75,6 +75,23 @@ class TestLoadProfile:
         profile = load_profile("custom")
         assert profile["name"] == "custom"
 
+    @pytest.mark.parametrize(
+        "bad_name",
+        [
+            "../secrets",
+            "../../etc/passwd",
+            "sub/dir/profile",
+            "/etc/passwd",
+            "..",
+            "",
+        ],
+    )
+    def test_rejects_path_traversal(self, bad_name):
+        # load_profile is reachable from the game web server with a
+        # request-supplied name, so traversal names must be rejected outright.
+        with pytest.raises(ValueError, match="Invalid profile name"):
+            load_profile(bad_name)
+
 
 class TestWriteDefaultConfig:
     def test_creates_file(self, tmp_path):

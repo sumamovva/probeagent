@@ -37,8 +37,32 @@ def get_api_key(provider: str = "openai") -> str | None:
 _BUNDLED_PROFILES = Path(__file__).resolve().parent.parent / "profiles"
 
 
+def _validate_profile_name(name: str) -> None:
+    """Reject profile names that could escape the profile search directories.
+
+    Profiles are looked up by bare name across a fixed set of directories, so a
+    valid name is a single filename with no path component. Rejecting separators,
+    parent refs, and absolute paths closes a path-traversal vector — important
+    because ``load_profile`` is reachable from the ``game`` web server with a
+    request-supplied profile name (see web/server.py).
+    """
+    if (
+        not name
+        or name in (".", "..")
+        or "/" in name
+        or "\\" in name
+        or os.sep in name
+        or (os.altsep and os.altsep in name)
+        or Path(name).is_absolute()
+    ):
+        raise ValueError(
+            f"Invalid profile name {name!r}: must be a bare name without path separators."
+        )
+
+
 def _profile_search_paths(name: str) -> list[Path]:
     """Return ordered list of paths to search for a profile."""
+    _validate_profile_name(name)
     filename = f"{name}.yaml" if not name.endswith(".yaml") else name
     cwd = Path.cwd()
     home_dir = Path.home() / ".probeagent" / "profiles"

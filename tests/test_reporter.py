@@ -37,7 +37,7 @@ class TestTerminalReport:
         output = reporter.report(score, target_info, config, OutputFormat.TERMINAL)
 
         assert "ProbeAgent Report" in output
-        assert "example.com" in output
+        assert "https://example.com/api" in output
         assert "quick" in output
 
     def test_empty_results(self):

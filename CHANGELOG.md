@@ -14,9 +14,18 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - **`docs/json-schema.md`** documents the full `-o json` report schema for programmatic
   consumers (#29).
 
+### Security
+- **Profile loading now rejects path-traversal names.** `load_profile` is reachable from
+  the `game` web server with a request-supplied profile name; names containing path
+  separators, `..`, or absolute paths are now refused, closing an arbitrary-file-read
+  vector (CodeQL `py/path-injection`).
+- **CI workflow pinned to least-privilege permissions** (`contents: read`), resolving the
+  missing-`permissions` warning.
+
 ### Tests
 - Added unit tests for five previously-untested attack modules — `data_exfil`,
-  `goal_hijacking`, `prompt_injection`, `seed_corpus`, `tool_misuse` (#27).
+  `goal_hijacking`, `prompt_injection`, `seed_corpus`, `tool_misuse` (#27), plus
+  path-traversal regression tests for profile loading.
 
 ## [0.3.5] - 2026-07-21
 
