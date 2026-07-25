@@ -63,7 +63,12 @@ def _validate_profile_name(name: str) -> None:
 def _profile_search_paths(name: str) -> list[Path]:
     """Return ordered list of paths to search for a profile."""
     _validate_profile_name(name)
-    filename = f"{name}.yaml" if not name.endswith(".yaml") else name
+    # Strip any directory component as a defense-in-depth barrier against path
+    # traversal. _validate_profile_name already rejects names with separators, so
+    # for every valid name basename(name) == name — this is a no-op on behaviour
+    # and an explicit, statically-recognisable sanitizer on the tainted value.
+    safe_name = os.path.basename(name)
+    filename = f"{safe_name}.yaml" if not safe_name.endswith(".yaml") else safe_name
     cwd = Path.cwd()
     home_dir = Path.home() / ".probeagent" / "profiles"
     return [
