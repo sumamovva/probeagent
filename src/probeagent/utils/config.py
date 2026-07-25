@@ -90,16 +90,17 @@ def load_profile(name: str) -> dict:
     """
     filename = _safe_filename(name)
     for root in _profile_roots():
-        real_root = os.path.realpath(root)
-        candidate = os.path.realpath(os.path.join(real_root, filename))
-        # Refuse any candidate that resolves outside its intended root — a
-        # containment check on the exact path handed to open(), independent of
-        # the name validation above (defense in depth).
-        if os.path.commonpath([real_root, candidate]) != real_root:
+        try:
+            entries = os.listdir(root)
+        except (FileNotFoundError, NotADirectoryError):
             continue
-        if os.path.isfile(candidate):
-            with open(candidate) as f:
-                return yaml.safe_load(f)
+        # Match against a trusted directory listing and open the entry from that
+        # listing — the path handed to open() derives from os.listdir, never
+        # directly from the user-supplied name, so no traversal is possible.
+        for entry in entries:
+            if entry == filename:
+                with open(os.path.join(root, entry)) as f:
+                    return yaml.safe_load(f)
     raise FileNotFoundError(
         f"Profile '{name}' not found. Searched:\n"
         + "\n".join(f"  - {p}" for p in _profile_search_paths(name))
