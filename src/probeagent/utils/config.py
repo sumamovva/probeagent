@@ -60,23 +60,27 @@ def _validate_profile_name(name: str) -> None:
         )
 
 
+def _profile_roots() -> list[Path]:
+    """Directories a profile may be loaded from, in search order."""
+    return [
+        Path.cwd(),
+        Path.cwd() / "profiles",
+        Path.home() / ".probeagent" / "profiles",
+        _BUNDLED_PROFILES,
+    ]
+
+
+def _safe_filename(name: str) -> str:
+    """Validated, directory-stripped profile filename (``<name>.yaml``)."""
+    _validate_profile_name(name)
+    safe_name = os.path.basename(name)
+    return f"{safe_name}.yaml" if not safe_name.endswith(".yaml") else safe_name
+
+
 def _profile_search_paths(name: str) -> list[Path]:
     """Return ordered list of paths to search for a profile."""
-    _validate_profile_name(name)
-    # Strip any directory component as a defense-in-depth barrier against path
-    # traversal. _validate_profile_name already rejects names with separators, so
-    # for every valid name basename(name) == name — this is a no-op on behaviour
-    # and an explicit, statically-recognisable sanitizer on the tainted value.
-    safe_name = os.path.basename(name)
-    filename = f"{safe_name}.yaml" if not safe_name.endswith(".yaml") else safe_name
-    cwd = Path.cwd()
-    home_dir = Path.home() / ".probeagent" / "profiles"
-    return [
-        cwd / filename,
-        cwd / "profiles" / filename,
-        home_dir / filename,
-        _BUNDLED_PROFILES / filename,
-    ]
+    filename = _safe_filename(name)
+    return [root / filename for root in _profile_roots()]
 
 
 def load_profile(name: str) -> dict:
@@ -84,9 +88,17 @@ def load_profile(name: str) -> dict:
 
     Search order: CWD > CWD/profiles/ > ~/.probeagent/profiles/ > bundled profiles/
     """
-    for path in _profile_search_paths(name):
-        if path.is_file():
-            with open(path) as f:
+    filename = _safe_filename(name)
+    for root in _profile_roots():
+        real_root = os.path.realpath(root)
+        candidate = os.path.realpath(os.path.join(real_root, filename))
+        # Refuse any candidate that resolves outside its intended root — a
+        # containment check on the exact path handed to open(), independent of
+        # the name validation above (defense in depth).
+        if os.path.commonpath([real_root, candidate]) != real_root:
+            continue
+        if os.path.isfile(candidate):
+            with open(candidate) as f:
                 return yaml.safe_load(f)
     raise FileNotFoundError(
         f"Profile '{name}' not found. Searched:\n"
