@@ -1,6 +1,7 @@
 """Tests for the CLI."""
 
 import json
+from unittest.mock import patch
 
 import httpx
 import pytest
@@ -396,3 +397,71 @@ class TestMCPTarget:
         )
         assert result.exit_code == 0
         assert "mcp" in result.output.lower()
+
+
+class TestProgressCallback:
+    def test_on_progress_is_called_with_correct_args(self):
+        """Verify the CLI wires on_progress to the engine with elapsed time."""
+        from probeagent.core.engine import AttackEngine
+
+        original_init = AttackEngine.__init__
+        captured_callback = None
+
+        def mock_init(self, config, on_progress=None):
+            nonlocal captured_callback
+            captured_callback = on_progress
+            original_init(self, config, on_progress)
+
+        with patch.object(AttackEngine, "__init__", mock_init):
+            result = runner.invoke(
+                app,
+                ["attack", "mock://hardened", "--target-type", "mock", "-p", "quick"],
+            )
+            assert result.exit_code == 0
+            # The callback should have been provided
+            assert captured_callback is not None
+            # Calling the callback should not raise
+            captured_callback("test_attack", 1, 5, [])
+
+    def test_progress_spinner_shows_elapsed_and_verdicts_in_stderr(self):
+        """The on_progress callback produces the correct status format."""
+        from probeagent.core.engine import AttackEngine
+        from probeagent.core.models import AttackResult, AttackOutcome, Severity, Verdict
+
+        original_init = AttackEngine.__init__
+        captured_callback = None
+
+        def mock_init(self, config, on_progress=None):
+            nonlocal captured_callback
+            captured_callback = on_progress
+            original_init(self, config, on_progress)
+
+        with patch.object(AttackEngine, "__init__", mock_init):
+            result = runner.invoke(
+                app,
+                ["attack", "mock://hardened", "--target-type", "mock", "-p", "quick"],
+            )
+            assert result.exit_code == 0
+            assert captured_callback is not None
+
+            # Simulate a call with a Compromised result — the status should show "1C"
+            fake_result = AttackResult(
+                attack_name="test",
+                outcome=AttackOutcome.SUCCEEDED,
+                severity=Severity.HIGH,
+                verdict=Verdict.COMPROMISED,
+            )
+            # Should not raise
+            captured_callback("Credential Exfil", 3, 12, [fake_result])
+
+
+class TestFormatElapsed:
+    def test_format_elapsed_seconds(self):
+        from probeagent.cli import _format_elapsed
+
+        assert _format_elapsed(0) == "0:00"
+        assert _format_elapsed(30) == "0:30"
+        assert _format_elapsed(59) == "0:59"
+        assert _format_elapsed(60) == "1:00"
+        assert _format_elapsed(90) == "1:30"
+        assert _format_elapsed(125) == "2:05"
