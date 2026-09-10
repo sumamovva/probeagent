@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 import asyncio
+import time
 from typing import Optional
 
 import typer
@@ -55,6 +56,13 @@ def _parse_headers(raw: list[str] | None) -> dict[str, str]:
         else:
             raise typer.BadParameter(f"Invalid header format: {item!r} (use 'Key: Value')")
     return headers
+
+
+def _format_elapsed(seconds: float) -> str:
+    """Format elapsed seconds as M:SS."""
+    minutes = int(seconds // 60)
+    secs = int(seconds % 60)
+    return f"{minutes}:{secs:02d}"
 
 
 _TARGET_TYPES = {
@@ -298,10 +306,19 @@ def attack(
 
     # Run attacks
     status = chrome.status("[bold]Running attacks...[/bold]", spinner="dots")
+    start_time = time.monotonic()
     status.start()
 
-    def on_progress(name: str, current: int, total: int) -> None:
-        status.update(f"[bold]Attacking[/bold] [cyan]{name}[/cyan]  ({current}/{total})")
+    def on_progress(name: str, current: int, total: int, results: list) -> None:
+        elapsed = _format_elapsed(time.monotonic() - start_time)
+        compromised = sum(1 for r in results if r.verdict == Verdict.COMPROMISED)
+        resisted = sum(1 for r in results if r.verdict == Verdict.RESISTED)
+        blocked = sum(1 for r in results if r.verdict == Verdict.BLOCKED)
+        verdicts = f"  {compromised}C {resisted}R {blocked}B" if results else ""
+        status.update(
+            f"[bold]Attacking[/bold] [cyan]{name}[/cyan] ({current}/{total})"
+            f" · {elapsed} elapsed{verdicts}"
+        )
 
     engine = AttackEngine(config, on_progress=on_progress)
 

@@ -34,7 +34,9 @@ class AttackEngine:
     """Orchestrates attack execution against a target."""
 
     def __init__(
-        self, config: ProbeConfig, on_progress: Callable[[str, int, int], None] | None = None
+        self,
+        config: ProbeConfig,
+        on_progress: Callable[[str, int, int, list[AttackResult]], None] | None = None,
     ):
         self.config = config
         self._on_progress = on_progress
@@ -89,9 +91,6 @@ class AttackEngine:
             cls = _ATTACK_CLASSES.get(attack_name)
             if cls is None:
                 continue
-            if self._on_progress:
-                display = cls.display_name if hasattr(cls, "display_name") else attack_name
-                self._on_progress(display, idx, total)
             attack = cls()
             attack_results = await attack.execute(
                 target,
@@ -99,6 +98,9 @@ class AttackEngine:
                 attacker_model=self.config.attacker_model,
             )
             results.extend(attack_results)
+            if self._on_progress:
+                display = cls.display_name if hasattr(cls, "display_name") else attack_name
+                self._on_progress(display, idx, total, results)
         return results
 
     async def _run_category(self, attack_name: str, target: Target) -> list[AttackResult]:
